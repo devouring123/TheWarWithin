@@ -1,0 +1,25 @@
+/* 플레이어 목록 스타일 개선 */
+.player-card .card-title {
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    line-height: 1.2;
+    color: #212529;
+}
+
+.player-card .card-title:hover {
+    color: #0d6efd;
+    transition: color 0.2s ease;
+}
+
+/* 반응형 폰트 크기 */
+@media (max-width: 576px) {
+    .player-card .card-title {
+        font-size: 0.9rem !important;
+    }
+}
+
+@media (min-width: 1200px) {
+    .player-card .card-title {
+        font-size: 1.1rem !important;
+    }
+}
