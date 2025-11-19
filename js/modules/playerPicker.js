@@ -1,26 +1,3 @@
-// 팀 생성 및 관리 모듈 (대기석 + 순차적 포지션 배정)
-
-// 포지션 정보
-const POSITIONS = ['탑', '정글', '미드', '원딜', '서폿'];
-
-// 현재 팀 상태
-let currentTeams = {
-    team1: [], // 대기석 플레이어들
-    team2: []  // 대기석 플레이어들
-};
-
-// 포지션별 배치된 플레이어들
-let positionPlayers = {
-    team1: Array(5).fill(null), // [탑, 정글, 미드, 원딜, 서폿]
-    team2: Array(5).fill(null)
-};
-
-// 현재 배정할 포지션 (0=탑, 1=정글, 2=미드, 3=원딜, 4=서폿)
-let currentPositionToAssign = {
-    team1: 0,
-    team2: 0
-};
-
 // 게임 데이터 및 기록 저장 (플레이어 피커용)
 let gameDataForPicker = null;
 let gameRecordsForPicker = [];
@@ -36,7 +13,7 @@ export function initializePlayerPicker(gameData, gameRecords) {
     window.addPlayerToInput = addPlayerToInput;
 }
 
-// 최근 20판 중 10판 이상 참여한 플레이어 필터링
+// 최근 20판 중 5판 이상 참여한 플레이어 필터링
 function getFrequentPlayers() {
     if (!gameRecordsForPicker || gameRecordsForPicker.length === 0) {
         return [];
@@ -55,9 +32,9 @@ function getFrequentPlayers() {
         });
     });
 
-    // 10판 이상 참여한 플레이어 필터링
+    // 5판 이상 참여한 플레이어 필터링
     const frequentPlayers = Object.keys(playerCounts)
-        .filter(player => playerCounts[player] >= 10)
+        .filter(player => playerCounts[player] >= 5)
         .sort((a, b) => a.localeCompare(b, 'ko-KR'));
 
     return frequentPlayers;
@@ -115,5 +92,3 @@ function addPlayerToInput(playerName) {
     currentPlayers.push(playerName);
     playersInput.value = currentPlayers.join('\n');
 }
-
-// 나머지 원본 코드는 그대로 유지됩니다...
