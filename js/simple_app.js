@@ -12,15 +12,22 @@ let gameRecords = []; // 게임 기록 데이터를 저장할 배열
 
 // DOM 로드 완료 시 실행
 document.addEventListener('DOMContentLoaded', function () {
-    initializeApp();
-    setupEventListeners();
+    // Chart.js 로딩 대기 후 초기화
+    const checkChartLoaded = setInterval(() => {
+        if (typeof Chart !== 'undefined') {
+            clearInterval(checkChartLoaded);
+            initializeApp();
+            setupEventListeners();
 
-    // 플레이어 클릭 핸들러를 전역으로 노출
-    window.handlePlayerClick = handlePlayerClick;
-    window.clearPlayerSelection = clearPlayerSelection;
-    window.refreshData = refreshData;
-    window.renderRivalChart = renderRivalChart;
-    window.renderTeammateChart = renderTeammateChart;
+            // 플레이어 클릭 핸들러를 전역으로 노출
+            window.handlePlayerClick = handlePlayerClick;
+            window.clearPlayerSelection = clearPlayerSelection;
+            window.refreshData = refreshData;
+            window.renderRivalChart = renderRivalChart;
+            window.renderTeammateChart = renderTeammateChart;
+            window.addPlayerToInput = window.addPlayerToInput; // playerPicker에서 설정됨
+        }
+    }, 100);
 });
 
 // 앱 초기화
