@@ -67,12 +67,9 @@ TheWarWithin/
 
 ### 1. Google Sheets 준비
 
-1. [Google Sheets](https://sheets.google.com)에서 새 스프레드시트 생성
-2. 두 개의 시트 생성:
-   - **승률표** 시트: 플레이어 통계
-   - **기록** 시트: 게임 결과
+1. [내전 기록용 스프레드 시트](https://docs.google.com/spreadsheets/d/1yKRXpuV0sxOYTijVeuKoH5xxgcgm-sPRD2Sf4eVIpcs/edit?usp=sharing) 사본 만들기
 
-3. 스프레드시트 공개 설정:
+2. 스프레드시트 공개 설정:
    - 파일 > 공유 > "링크가 있는 모든 사용자" 권한 설정
 
 ### 2. Google Cloud API 설정
