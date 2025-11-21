@@ -1,7 +1,7 @@
 // 모듈 임포트
 import { setupEventListeners } from './modules/uiManager.js';
 import { loadData, hideLoading, showError } from './modules/gameManager.js';
-import { renderOverviewStats, renderStatsTable, renderPlayersList, renderCharts, updateLastUpdated } from './modules/uiManager.js';
+import { renderOverviewStats, renderStatsTable, renderPlayersList, renderCharts, updateLastUpdated, renderMatchHistory, showCaptureButton } from './modules/uiManager.js';
 import { handlePlayerClick, clearPlayerSelection, getSelectedPlayers, setGameRecords, setGameData, renderRivalChart, renderTeammateChart } from './modules/playerManager.js';
 import { initializeWinRateSystem, updateWinRateDisplay } from './modules/winRateDisplay.js';
 import { initializePlayerPicker } from './modules/playerPicker.js';
@@ -55,6 +55,9 @@ async function initializeApp() {
         // 플레이어 피커 초기화
         initializePlayerPicker(gameData, gameRecords);
 
+        // 매치 히스토리 렌더링 (서버 데이터 사용)
+        renderMatchHistory(gameRecords);
+
     } catch (error) {
         console.error('앱 초기화 오류:', error);
         showError(`앱을 초기화할 수 없습니다: ${error.message}`);
@@ -82,6 +85,9 @@ async function refreshData() {
 
         // 플레이어 피커 재초기화
         initializePlayerPicker(gameData, gameRecords);
+
+        // 매치 히스토리 렌더링
+        renderMatchHistory(gameRecords);
 
     } catch (error) {
         console.error('데이터 새로고침 오류:', error);

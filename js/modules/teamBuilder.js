@@ -49,6 +49,51 @@ export function setupTeamBuilder() {
     if (generateBtn) {
         generateBtn.addEventListener('click', handleGenerateTeams);
     }
+
+    const resetBtn = document.getElementById('resetTeamBuilderBtn');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', handleResetTeamBuilder);
+    }
+}
+
+// 전체 취소 처리 함수
+function handleResetTeamBuilder() {
+    // 입력창 초기화
+    const playersInput = document.getElementById('playersInput');
+    if (playersInput) {
+        playersInput.value = '';
+    }
+
+    // 팀 상태 초기화
+    currentTeams = { team1: [], team2: [] };
+    positionPlayers = {
+        team1: Array(5).fill(null),
+        team2: Array(5).fill(null)
+    };
+    currentPositionToAssign = { team1: 0, team2: 0 };
+
+    // 생성된 팀 결과 숨기기
+    const generatedTeams = document.getElementById('generatedTeams');
+    if (generatedTeams) {
+        generatedTeams.style.display = 'none';
+    }
+
+    // 캡처 버튼 숨기기
+    const captureBtn = document.getElementById('captureTeamBtn');
+    if (captureBtn) {
+        captureBtn.style.display = 'none';
+    }
+
+    // 복사 상태 메시지 제거
+    const copyStatus = document.getElementById('copyStatus');
+    if (copyStatus) {
+        copyStatus.remove();
+    }
+
+    // 선택된 플레이어 버튼 초기화
+    document.querySelectorAll('.player-select-btn').forEach(btn => {
+        btn.classList.remove('selected');
+    });
 }
 
 // 팀 생성 처리 함수
@@ -98,7 +143,13 @@ function handleGenerateTeams() {
         if (generatedTeams) {
             generatedTeams.style.display = 'flex';
         }
-        
+
+        // 캡처 버튼 표시
+        const captureBtn = document.getElementById('captureTeamBtn');
+        if (captureBtn) {
+            captureBtn.style.display = 'block';
+        }
+
         console.log('팀 생성 완료:', teams);
         
     } catch (error) {

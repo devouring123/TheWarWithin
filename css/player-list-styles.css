@@ -1,6 +1,6 @@
 /* 플레이어 목록 스타일 개선 */
 .player-card .card-title {
-    font-size: 1rem !important;
+    font-size: 1.2rem !important;
     font-weight: 600 !important;
     line-height: 1.2;
     color: #212529;
@@ -21,5 +21,193 @@
 @media (min-width: 1200px) {
     .player-card .card-title {
         font-size: 1.1rem !important;
+    }
+}
+
+/* 포지션 배지 스타일 */
+.position-badge {
+    display: inline-block;
+    padding: 5px 12px;
+    margin: 3px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: white;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.position-badge:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* 탑 - 청록색 */
+.position-badge.pos-top {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    border: 1px solid #117a8b;
+}
+
+/* 정글 - 녹색 */
+.position-badge.pos-jungle {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+    border: 1px solid #1c7430;
+}
+
+/* 미드 - 노란색/금색 */
+.position-badge.pos-mid {
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+    border: 1px solid #d39e00;
+    color: #212529;
+    text-shadow: 0 1px 1px rgba(255, 255, 255, 0.3);
+}
+
+/* 원딜 - 빨간색 */
+.position-badge.pos-adc {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    border: 1px solid #bd2130;
+}
+
+/* 서포터 - 보라색 */
+.position-badge.pos-support {
+    background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
+    border: 1px solid #4e2d91;
+}
+
+/* 선택된 플레이어 카드 스타일 */
+.player-card.selected-first {
+    background: #d4edda !important;
+    border: 2px solid #28a745 !important;
+    box-shadow: 0 0 10px rgba(40, 167, 69, 0.3) !important;
+}
+
+.player-card.selected-second {
+    background: #f8d7da !important;
+    border: 2px solid #dc3545 !important;
+    box-shadow: 0 0 10px rgba(220, 53, 69, 0.3) !important;
+}
+
+/* 티어 배지 스타일 */
+.tier-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 24px;
+    padding: 0 10px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease;
+}
+
+.tier-badge:hover {
+    transform: scale(1.1);
+}
+
+/* 언랭 */
+.tier-badge.tier-언랭 {
+    background: linear-gradient(135deg, #9CA3AF 0%, #6B7280 100%);
+    color: white;
+    border: 1px solid #4B5563;
+}
+
+/* 아이언 */
+.tier-badge.tier-아이언,
+.tier-badge.tier-iron {
+    background: linear-gradient(135deg, #8B9BA8 0%, #5C6B7A 100%);
+    color: white;
+    border: 1px solid #4A5568;
+}
+
+/* 브론즈 */
+.tier-badge.tier-브론즈,
+.tier-badge.tier-bronze {
+    background: linear-gradient(135deg, #CD9B6D 0%, #8B5A2B 100%);
+    color: white;
+    border: 1px solid #7A4A1F;
+}
+
+/* 실버 */
+.tier-badge.tier-실버,
+.tier-badge.tier-silver {
+    background: linear-gradient(135deg, #E8E8E8 0%, #A8A8A8 100%);
+    color: #333;
+    border: 1px solid #888;
+}
+
+/* 골드 */
+.tier-badge.tier-골드,
+.tier-badge.tier-gold {
+    background: linear-gradient(135deg, #FFE066 0%, #FFB300 100%);
+    color: #5D4E00;
+    border: 1px solid #CC9000;
+    box-shadow: 0 2px 6px rgba(255, 179, 0, 0.4);
+}
+
+/* 플래티넘 */
+.tier-badge.tier-플래티넘,
+.tier-badge.tier-platinum {
+    background: linear-gradient(135deg, #4FD1C5 0%, #1A9E8F 100%);
+    color: white;
+    border: 1px solid #147A6E;
+}
+
+/* 에메랄드 */
+.tier-badge.tier-에메랄드,
+.tier-badge.tier-emerald {
+    background: linear-gradient(135deg, #6EE7B7 0%, #10B981 100%);
+    color: white;
+    border: 1px solid #059669;
+    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.4);
+}
+
+/* 다이아몬드 */
+.tier-badge.tier-다이아몬드,
+.tier-badge.tier-diamond {
+    background: linear-gradient(135deg, #93C5FD 0%, #3B82F6 100%);
+    color: white;
+    border: 1px solid #2563EB;
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);
+}
+
+/* 마스터 */
+.tier-badge.tier-마스터,
+.tier-badge.tier-master {
+    background: linear-gradient(135deg, #C084FC 0%, #9333EA 100%);
+    color: white;
+    border: 1px solid #7E22CE;
+    box-shadow: 0 2px 6px rgba(147, 51, 234, 0.4);
+}
+
+/* 그랜드마스터 */
+.tier-badge.tier-그랜드마스터,
+.tier-badge.tier-grandmaster {
+    background: linear-gradient(135deg, #FCA5A5 0%, #DC2626 100%);
+    color: white;
+    border: 1px solid #B91C1C;
+    box-shadow: 0 2px 6px rgba(220, 38, 38, 0.4);
+}
+
+/* 챌린저 */
+.tier-badge.tier-챌린저,
+.tier-badge.tier-challenger {
+    background: linear-gradient(135deg, #FDE68A 0%, #F59E0B 100%);
+    color: #78350F;
+    border: 1px solid #D97706;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.5);
+    animation: challenger-glow 2s ease-in-out infinite;
+}
+
+@keyframes challenger-glow {
+    0%, 100% {
+        box-shadow: 0 2px 8px rgba(245, 158, 11, 0.5);
+    }
+    50% {
+        box-shadow: 0 2px 16px rgba(245, 158, 11, 0.8);
     }
 }

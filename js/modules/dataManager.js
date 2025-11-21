@@ -190,32 +190,41 @@ export function parseRecordsCSV(csvData) {
     // 2-6행: 승리팀 (탑, 정글, 미드, 원딜, 서폿)
     // 7행: "승/패" 구분자 (건너뛰기)
     // 8-12행: 패배팀 (탑, 정글, 미드, 원딜, 서폿)
-    
+    // 13행: 빈칸 (건너뛰기)
+    // 14행: MVP
+    // 15행: ACE
+
     const dateRow = parsedLines[0];
     const winTeamRows = parsedLines.slice(1, 6); // 2-6행
     const loseTeamRows = parsedLines.slice(7, 12); // 8-12행
-    
+    const mvpRow = parsedLines[13] || []; // 14행 (MVP)
+    const aceRow = parsedLines[14] || []; // 15행 (ACE)
+
     console.log('Date row:', dateRow);
     console.log('Win team rows:', winTeamRows);
     console.log('Lose team rows:', loseTeamRows);
-    
+    console.log('MVP row:', mvpRow);
+    console.log('ACE row:', aceRow);
+
     const gameRecords = [];
-    
+
     // 각 열(게임)을 순회
     for (let col = 1; col < dateRow.length; col++) {
         const date = dateRow[col];
         if (!date || !date.trim()) continue;
-        
+
         const winners = winTeamRows.map(row => row[col]).filter(name => name && name.trim()).map(name => name.trim().toLowerCase());
         const losers = loseTeamRows.map(row => row[col]).filter(name => name && name.trim()).map(name => name.trim().toLowerCase());
-        
-        console.log(`Game ${col}: date=${date}, winners=${winners}, losers=${losers}`);
-        
+        const mvp = mvpRow[col] ? mvpRow[col].trim().toLowerCase() : '';
+        const ace = aceRow[col] ? aceRow[col].trim().toLowerCase() : '';
+
+        console.log(`Game ${col}: date=${date}, winners=${winners}, losers=${losers}, mvp=${mvp}, ace=${ace}`);
+
         if (winners.length > 0 && losers.length > 0) {
-            gameRecords.push({ date, winners, losers });
+            gameRecords.push({ date, winners, losers, mvp, ace });
         }
     }
-    
+
     console.log('Final parsed records count:', gameRecords.length);
     console.log('Final records:', gameRecords);
     return gameRecords;

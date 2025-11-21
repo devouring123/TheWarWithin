@@ -1,7 +1,13 @@
 import { getWinrateClass, getPositionName } from './utils.js';
 import { handleTeamWin as handleTeamWinGame, addToGoogleSheetsRecord } from './gameManager.js';
-import { clearPlayerSelection } from './playerManager.js';
+import { clearPlayerSelection, getRecentFormHtml } from './playerManager.js';
 import { setupTeamBuilder, clearTeamSelection, getSelectedTeams, resetToWaitingAreaWithTeams } from './teamBuilder.js';
+
+// MVP/ACE 선택 관련 전역 변수
+let selectedMvp = null;
+let selectedAce = null;
+let pendingGameResult = null;
+let pendingWinningTeam = null;
 
 // 티어별 색상과 첫 글자 매핑 함수
 function getTierInfo(tier) {
@@ -38,8 +44,9 @@ function getTierInfo(tier) {
 // 티어 배지 HTML 생성 함수
 export function getTierBadgeHtml(tier) {
     const tierInfo = getTierInfo(tier);
-    
-    return `<span class="tier-color-badge" style="background-color: ${tierInfo.bgColor}; color: ${tierInfo.textColor};" title="${tier}">${tierInfo.char}</span>`;
+    const tierClass = tier.toLowerCase().replace(/\s/g, '');
+
+    return `<span class="tier-badge tier-${tierClass}" title="${tier}">${tierInfo.char}</span>`;
 }
 
 // 전체 현황 렌더링 (평균 게임/플레이어 제거)
@@ -75,18 +82,18 @@ export function renderStatsTable(gameData) {
     const headerRow = `
         <thead>
             <tr>
-                <th style="min-width: 40px;" class="text-center">순위</th>
-                <th style="min-width: 100px;">이름</th>
-                <th style="min-width: 50px;" class="text-center">티어</th>
-                <th style="min-width: 60px;" class="text-center">게임수</th>
-                <th style="min-width: 70px;" class="text-center">승률</th>
-                <th style="min-width: 70px;" class="text-center">TOP</th>
-                <th style="min-width: 70px;" class="text-center">JGL</th>
-                <th style="min-width: 70px;" class="text-center">MID</th>
-                <th style="min-width: 70px;" class="text-center">ADC</th>
-                <th style="min-width: 70px;" class="text-center">SUP</th>
-                <th style="min-width: 50px;" class="text-center">승</th>
-                <th style="min-width: 50px;" class="text-center">패</th>
+                <th class="text-center">순위</th>
+                <th class="text-center">이름</th>
+                <th class="text-center">티어</th>
+                <th class="text-center">게임</th>
+                <th class="text-center">승률</th>
+                <th class="text-center">TOP</th>
+                <th class="text-center">JGL</th>
+                <th class="text-center">MID</th>
+                <th class="text-center">ADC</th>
+                <th class="text-center">SUP</th>
+                <th class="text-center">승</th>
+                <th class="text-center">패</th>
             </tr>
         </thead>
     `;
@@ -151,7 +158,7 @@ export function renderStatsTable(gameData) {
         return `
             <tr class="${rowClass}">
                 <td class="text-center ${rankClass}">${rankDisplay}</td>
-                <td class="player-name">${player.name}</td>
+                <td class="player-name text-center">${player.name}</td>
                 <td class="tier-col text-center">${getTierBadgeHtml(player.tier)}</td>
                 <td class="games-cell text-center">${player.total_games}</td>
                 <td class="winrate-cell text-center" style="color: ${winrateColor}">
@@ -183,22 +190,24 @@ export function renderPlayersList(gameData, selectedPlayers, handlePlayerClick) 
         const winrateClass = getWinrateClass(player.overall_winrate);
         const positions = getPlayerPositions(player);
         const chartId = `playerChart${index}`;
-        
+        const recentForm = getRecentFormHtml(player.name);
+
         return `
             <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3" onclick="handlePlayerClick('${player.name}')">
                 <div class="card player-card h-100" id="player-card-${player.name}">
                     <div class="card-body p-2 d-flex flex-column">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <div>
-                                <h6 class="card-title mb-0 fw-bold">
-                                    ${player.name}
-                                    <span class="ms-1">${getTierBadgeHtml(player.tier)}</span>
-                                </h6>
-                                <small class="text-muted">${player.total_games}게임</small>
-                            </div>
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <h6 class="card-title mb-0 fw-bold">
+                                ${player.name}
+                                <span class="ms-1">${getTierBadgeHtml(player.tier)}</span>
+                            </h6>
                             <span class="winrate-badge ${winrateClass} fs-6">
                                 ${(player.overall_winrate * 100).toFixed(1)}%
                             </span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div>${recentForm}</div>
+                            <small class="text-muted">${player.total_games}게임</small>
                         </div>
                         
                         <div class="mb-2">
@@ -242,7 +251,7 @@ export function renderPlayersList(gameData, selectedPlayers, handlePlayerClick) 
     }, 100);
 }
 
-// 플레이어의 주요 포지션 반환
+// 플레이어의 주요 포지션 반환 (상위 2개만)
 function getPlayerPositions(player) {
     const positionNames = {
         top: { name: 'TOP', class: 'pos-top' },
@@ -251,10 +260,11 @@ function getPlayerPositions(player) {
         adc: { name: 'ADC', class: 'pos-adc' },
         support: { name: 'SUP', class: 'pos-support' }
     };
-    
+
     return Object.entries(player.positions)
         .filter(([pos, data]) => data.games > 0)
         .sort((a, b) => b[1].games - a[1].games)
+        .slice(0, 2) // 상위 2개만
         .map(([pos, data]) => {
             const posInfo = positionNames[pos];
             const winrate = data.games > 0 ? (data.wins / data.games * 100).toFixed(0) : 0;
@@ -459,26 +469,38 @@ function renderWinrateChart(gameData) {
                     if (p.overall_winrate >= 0.4) return 'rgba(255, 193, 7, 1)';
                     return 'rgba(220, 53, 69, 1)';
                 }),
-                borderWidth: 1
+                borderWidth: 1,
+                barThickness: 12
             }]
         },
         options: {
+            indexAxis: 'y', // 수평 막대 차트로 변경
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                y: {
+                x: {
                     beginAtZero: true,
                     max: 100,
                     ticks: {
                         callback: function(value) {
                             return value + '%';
+                        },
+                        font: {
+                            size: 10
+                        }
+                    }
+                },
+                y: {
+                    ticks: {
+                        font: {
+                            size: 11
                         }
                     }
                 }
             },
             interaction: {
               mode: 'nearest',
-              axis: 'x',
+              axis: 'y',
               intersect: false
             },
             plugins: {
@@ -527,21 +549,13 @@ export function setupEventListeners() {
             const selectedTeams = getSelectedTeams();
             const team1Players = selectedTeams.team1;
             const team2Players = selectedTeams.team2;
-            
+
             if (team1Players.length === 5 && team2Players.length === 5) {
                 const gameResult = handleTeamWinGame(1, team1Players.join('\n'), team2Players.join('\n'));
-                
+
                 if (gameResult) {
-                    addToGoogleSheetsRecord(gameResult.winners, gameResult.losers)
-                        .then(() => {
-                            alert(`팀 1 승리가 기록되었습니다!`);
-                            window.refreshData();
-                            resetToWaitingAreaWithTeams(); // 팀 구성 유지하며 대기석으로 복원
-                        })
-                        .catch((error) => {
-                            console.error('Google Sheets 기록 실패:', error);
-                            alert('Google Sheets 기록에 실패했습니다.');
-                        });
+                    // MVP 모달 열기
+                    openMvpModal(gameResult.winners, gameResult, 1);
                 }
             } else {
                 alert('각 팀의 5명 플레이어를 모두 선택해주세요.');
@@ -556,26 +570,30 @@ export function setupEventListeners() {
             const selectedTeams = getSelectedTeams();
             const team1Players = selectedTeams.team1;
             const team2Players = selectedTeams.team2;
-            
+
             if (team1Players.length === 5 && team2Players.length === 5) {
                 const gameResult = handleTeamWinGame(2, team1Players.join('\n'), team2Players.join('\n'));
-                
+
                 if (gameResult) {
-                    addToGoogleSheetsRecord(gameResult.winners, gameResult.losers)
-                        .then(() => {
-                            alert(`팀 2 승리가 기록되었습니다!`);
-                            window.refreshData();
-                            resetToWaitingAreaWithTeams(); // 팀 구성 유지하며 대기석으로 복원
-                        })
-                        .catch((error) => {
-                            console.error('Google Sheets 기록 실패:', error);
-                            alert('Google Sheets 기록에 실패했습니다.');
-                        });
+                    // MVP 모달 열기
+                    openMvpModal(gameResult.winners, gameResult, 2);
                 }
             } else {
                 alert('각 팀의 5명 플레이어를 모두 선택해주세요.');
             }
         });
+    }
+
+    // MVP 확정 버튼
+    const confirmMvpBtn = document.getElementById('confirmMvpBtn');
+    if (confirmMvpBtn) {
+        confirmMvpBtn.addEventListener('click', confirmWinAndSave);
+    }
+
+    // 이미지 캡처 버튼
+    const captureTeamBtn = document.getElementById('captureTeamBtn');
+    if (captureTeamBtn) {
+        captureTeamBtn.addEventListener('click', captureTeamRoster);
     }
 
 
@@ -589,5 +607,339 @@ export function setupEventListeners() {
         });
     } else {
         console.log("clearSelectionBtn not found!");
+    }
+}
+
+// MVP/ACE 모달 열기
+function openMvpModal(winners, gameResult, winningTeam) {
+    selectedMvp = null;
+    selectedAce = null;
+    pendingGameResult = gameResult;
+    pendingWinningTeam = winningTeam;
+
+    const mvpPlayerList = document.getElementById('mvpPlayerList');
+    const acePlayerList = document.getElementById('acePlayerList');
+    const confirmMvpBtn = document.getElementById('confirmMvpBtn');
+
+    // MVP 선택 버튼 생성 (승리팀)
+    mvpPlayerList.innerHTML = winners.map(player => `
+        <button type="button" class="mvp-player-btn" data-player="${player}">
+            <i class="fas fa-crown me-1"></i>${player}
+        </button>
+    `).join('');
+
+    // ACE 선택 버튼 생성 (패배팀)
+    acePlayerList.innerHTML = gameResult.losers.map(player => `
+        <button type="button" class="ace-player-btn" data-player="${player}">
+            <i class="fas fa-medal me-1"></i>${player}
+        </button>
+    `).join('');
+
+    // 확정 버튼 활성화 체크 함수
+    const checkConfirmButton = () => {
+        confirmMvpBtn.disabled = !(selectedMvp && selectedAce);
+    };
+
+    // MVP 선택 이벤트
+    mvpPlayerList.querySelectorAll('.mvp-player-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            mvpPlayerList.querySelectorAll('.mvp-player-btn').forEach(b => b.classList.remove('selected'));
+            this.classList.add('selected');
+            selectedMvp = this.dataset.player;
+            checkConfirmButton();
+        });
+    });
+
+    // ACE 선택 이벤트
+    acePlayerList.querySelectorAll('.ace-player-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            acePlayerList.querySelectorAll('.ace-player-btn').forEach(b => b.classList.remove('selected'));
+            this.classList.add('selected');
+            selectedAce = this.dataset.player;
+            checkConfirmButton();
+        });
+    });
+
+    // 확정 버튼 비활성화
+    confirmMvpBtn.disabled = true;
+
+    // 모달 열기
+    const mvpModal = new bootstrap.Modal(document.getElementById('mvpModal'));
+    mvpModal.show();
+}
+
+// MVP/ACE 선택 후 저장
+async function confirmWinAndSave() {
+    if (!selectedMvp || !selectedAce || !pendingGameResult) {
+        alert('MVP와 ACE를 모두 선택해주세요.');
+        return;
+    }
+
+    try {
+        // Google Sheets에 기록 (MVP/ACE 포함)
+        await addToGoogleSheetsRecord(
+            pendingGameResult.winners,
+            pendingGameResult.losers,
+            selectedMvp,
+            selectedAce
+        );
+
+        // localStorage에 매치 데이터 저장 (MVP/ACE 포함)
+        const matchData = {
+            date: new Date().toISOString(),
+            winners: pendingGameResult.winners,
+            losers: pendingGameResult.losers,
+            mvp: selectedMvp,
+            ace: selectedAce,
+            winningTeam: pendingWinningTeam
+        };
+
+        saveMatchToLocalStorage(matchData);
+
+        // 모달 닫기
+        const mvpModal = bootstrap.Modal.getInstance(document.getElementById('mvpModal'));
+        mvpModal.hide();
+
+        alert(`팀 ${pendingWinningTeam} 승리!\nMVP: ${selectedMvp}\nACE: ${selectedAce}`);
+        resetToWaitingAreaWithTeams();
+
+        // 데이터 새로고침 (renderMatchHistory는 refreshData 내에서 호출됨)
+        window.refreshData();
+
+    } catch (error) {
+        console.error('저장 실패:', error);
+        alert('기록 저장에 실패했습니다: ' + error.message);
+    }
+}
+
+// localStorage에 매치 데이터 저장
+function saveMatchToLocalStorage(matchData) {
+    try {
+        const matches = JSON.parse(localStorage.getItem('matchHistory') || '[]');
+        matches.unshift(matchData); // 최신 기록을 앞에 추가
+
+        // 최대 100개까지만 저장
+        if (matches.length > 100) {
+            matches.pop();
+        }
+
+        localStorage.setItem('matchHistory', JSON.stringify(matches));
+        console.log('매치 데이터 저장 완료:', matchData);
+    } catch (error) {
+        console.error('localStorage 저장 오류:', error);
+    }
+}
+
+// 매치 히스토리 렌더링 (서버 데이터 사용) - 그룹핑 기반 카드 UI
+export function renderMatchHistory(gameRecords = []) {
+    const matchHistoryList = document.getElementById('matchHistoryList');
+    if (!matchHistoryList) return;
+
+    // 서버 데이터에서 최근 15경기만 표시 (역순으로 최신순)
+    const recentMatches = gameRecords.slice(-15).reverse();
+
+    if (recentMatches.length === 0) {
+        matchHistoryList.innerHTML = `
+            <div class="text-center text-muted p-4">
+                <i class="fas fa-info-circle me-2"></i>아직 기록된 경기가 없습니다.
+            </div>
+        `;
+        return;
+    }
+
+    // 멤버 구성으로 그룹핑 (최근 3개 그룹만)
+    const allGroups = groupMatchesByMembers(recentMatches);
+    const groups = allGroups.slice(0, 3);
+
+    // 그룹별 렌더링
+    matchHistoryList.innerHTML = groups.map((group, groupIndex) => {
+        const matchesHtml = group.matches.map((match, matchIndex) => {
+            // 서버 데이터에서 MVP/ACE 가져오기
+            const mvpName = match.mvp || '';
+            const aceName = match.ace || '';
+
+            // 팀 이름 포맷팅 (첫글자 대문자)
+            const formatName = (name) => name.charAt(0).toUpperCase() + name.slice(1);
+
+            // 구분자를 가운뎃점으로 변경
+            const winnersStr = match.winners.map(formatName).join(' · ');
+            const losersStr = match.losers.map(formatName).join(' · ');
+
+            // 날짜 포맷팅 (월/일만)
+            let dateStr = '-';
+            if (match.date) {
+                let parsedDate = new Date(match.date);
+                if (isNaN(parsedDate.getTime())) {
+                    const dateMatch = match.date.match(/(\d{4})[./-](\d{1,2})[./-](\d{1,2})/);
+                    if (dateMatch) {
+                        parsedDate = new Date(dateMatch[1], dateMatch[2] - 1, dateMatch[3]);
+                    }
+                }
+                if (!isNaN(parsedDate.getTime())) {
+                    const month = parsedDate.getMonth() + 1;
+                    const day = parsedDate.getDate();
+                    dateStr = `${month}/${day}`;
+                } else {
+                    dateStr = match.date.length > 10 ? match.date.substring(5, 10) : match.date;
+                }
+            }
+
+            return `
+                <div class="match-row" data-match-index="${matchIndex}">
+                    <div class="match-round">
+                        <span class="match-date">${dateStr}</span>
+                    </div>
+                    <div class="match-team win-team left-team">
+                        <span class="team-badge win">W</span>
+                        <span class="team-players">${highlightPlayer(winnersStr, mvpName, 'mvp')}</span>
+                    </div>
+                    <div class="match-vs">VS</div>
+                    <div class="match-team lose-team right-team">
+                        <span class="team-players">${highlightPlayer(losersStr, aceName, 'ace')}</span>
+                        <span class="team-badge lose">L</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        return `
+            <div class="match-group" data-group-index="${groupIndex}">
+                <div class="group-timeline"></div>
+                ${matchesHtml}
+            </div>
+        `;
+    }).join('');
+}
+
+// 멤버 구성으로 매치 그룹핑
+function groupMatchesByMembers(matches) {
+    if (matches.length === 0) return [];
+
+    const groups = [];
+    let currentGroup = null;
+
+    matches.forEach((match, index) => {
+        // 멤버 시그니처 생성 (팀 순서 무관하게 동일한 키 생성)
+        const signature = createMemberSignature(match.winners, match.losers);
+
+        if (!currentGroup || currentGroup.signature !== signature) {
+            // 새 그룹 시작
+            currentGroup = {
+                signature: signature,
+                matches: [match]
+            };
+            groups.push(currentGroup);
+        } else {
+            // 기존 그룹에 추가
+            currentGroup.matches.push(match);
+        }
+    });
+
+    return groups;
+}
+
+// 멤버 시그니처 생성 (팀 순서 무관)
+function createMemberSignature(team1, team2) {
+    // 각 팀을 정렬하여 배열로 만들기
+    const sorted1 = [...team1].map(n => n.toLowerCase()).sort();
+    const sorted2 = [...team2].map(n => n.toLowerCase()).sort();
+
+    // 두 팀을 합쳐서 전체 정렬 (팀 순서 무관하게 동일한 시그니처)
+    const allMembers = [...sorted1, ...sorted2].sort();
+
+    return allMembers.join('|');
+}
+
+// 플레이어 이름에서 MVP/ACE 하이라이트
+function highlightPlayer(playersStr, highlightName, type) {
+    if (!highlightName || highlightName === '-') return playersStr;
+
+    const color = type === 'mvp' ? '#9333EA' : '#10B981';
+    const icon = type === 'mvp' ? 'fa-crown' : 'fa-medal';
+
+    return playersStr.replace(
+        new RegExp(`(${highlightName})`, 'gi'),
+        `<span style="color: ${color};" class="fw-bold"><i class="fas ${icon} me-1"></i>$1</span>`
+    );
+}
+
+// 팀 편성 이미지 캡처
+async function captureTeamRoster() {
+    const generatedTeams = document.getElementById('generatedTeams');
+    if (!generatedTeams) return;
+
+    try {
+        // 캡처 버튼 숨기기
+        const captureBtn = document.getElementById('captureTeamBtn');
+        if (captureBtn) captureBtn.style.visibility = 'hidden';
+
+        const canvas = await html2canvas(generatedTeams, {
+            backgroundColor: '#f8f9fc',
+            scale: 2,
+            useCORS: true
+        });
+
+        // 캡처 버튼 다시 표시
+        if (captureBtn) captureBtn.style.visibility = 'visible';
+
+        // 클립보드에 복사
+        canvas.toBlob(async (blob) => {
+            if (blob) {
+                try {
+                    await navigator.clipboard.write([
+                        new ClipboardItem({ 'image/png': blob })
+                    ]);
+                    showCopyStatus('복사 완료!', 'success');
+                } catch (clipboardError) {
+                    console.warn('클립보드 복사 실패:', clipboardError);
+                    showCopyStatus('복사 실패', 'error');
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error('이미지 캡처 실패:', error);
+        showCopyStatus('캡처 실패', 'error');
+    }
+}
+
+// 복사 상태 표시
+function showCopyStatus(message, type) {
+    // 기존 상태 메시지 제거
+    const existingStatus = document.getElementById('copyStatus');
+    if (existingStatus) existingStatus.remove();
+
+    // 새 상태 메시지 생성
+    const statusEl = document.createElement('div');
+    statusEl.id = 'copyStatus';
+    statusEl.style.cssText = `
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-weight: 600;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        ${type === 'success'
+            ? 'background: #d4edda; color: #155724; border: 1px solid #c3e6cb;'
+            : 'background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;'}
+    `;
+    statusEl.textContent = message;
+
+    // team-roster-container에 추가
+    const container = document.querySelector('.team-roster-container');
+    if (container) {
+        container.appendChild(statusEl);
+    }
+
+    // 3초 후 자동 제거
+    setTimeout(() => {
+        if (statusEl.parentNode) statusEl.remove();
+    }, 3000);
+}
+
+// 캡처 버튼 표시/숨기기
+export function showCaptureButton(show) {
+    const captureBtn = document.getElementById('captureTeamBtn');
+    if (captureBtn) {
+        captureBtn.style.display = show ? 'block' : 'none';
     }
 }

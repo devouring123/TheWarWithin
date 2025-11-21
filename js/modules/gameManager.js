@@ -208,11 +208,14 @@ export async function loadData(showConfigFormFlag = true) {
 
         showLoading('Google Sheets에서 실시간 데이터를 불러오는 중...');
 
+        // 캐시 무효화를 위한 타임스탬프
+        const cacheBuster = `&_t=${Date.now()}`;
+
         // 승률표 데이터 로드 (CSV 우선, API 보조)
-        const csvUrl = `https://docs.google.com/spreadsheets/d/${currentConfig.SPREADSHEET_ID}/export?format=csv&gid=${currentConfig.SHEET_GID}`;
+        const csvUrl = `https://docs.google.com/spreadsheets/d/${currentConfig.SPREADSHEET_ID}/export?format=csv&gid=${currentConfig.SHEET_GID}${cacheBuster}`;
         try {
             console.log('승률표 CSV 방식으로 데이터 로드 시도...');
-            const csvResponse = await fetch(csvUrl);
+            const csvResponse = await fetch(csvUrl, { cache: 'no-store' });
             if (csvResponse.ok) {
                 const csvData = await csvResponse.text();
                 gameData = parseCSVData(csvData);
@@ -226,10 +229,10 @@ export async function loadData(showConfigFormFlag = true) {
         }
 
         // 기록 시트 데이터 로드 (CSV 방식만 사용)
-        const recordsCsvUrl = `https://docs.google.com/spreadsheets/d/${currentConfig.SPREADSHEET_ID}/export?format=csv&gid=${currentConfig.RECORDS_SHEET_GID}`;
+        const recordsCsvUrl = `https://docs.google.com/spreadsheets/d/${currentConfig.SPREADSHEET_ID}/export?format=csv&gid=${currentConfig.RECORDS_SHEET_GID}${cacheBuster}`;
         try {
             console.log('기록 시트 CSV 방식으로 데이터 로드 시도...');
-            const recordsCsvResponse = await fetch(recordsCsvUrl);
+            const recordsCsvResponse = await fetch(recordsCsvUrl, { cache: 'no-store' });
             if (recordsCsvResponse.ok) {
                 const recordsCsvData = await recordsCsvResponse.text();
                 gameRecords = parseRecordsCSV(recordsCsvData);
@@ -253,7 +256,7 @@ export async function loadData(showConfigFormFlag = true) {
 }
 
 // Google Sheets 기록 시트에 데이터 추가
-export async function addToGoogleSheetsRecord(winners, losers) {
+export async function addToGoogleSheetsRecord(winners, losers, mvp = null, ace = null) {
     try {
         // CONFIG가 비어있으면 URL 파라미터나 localStorage에서 설정 재로드
         console.log('Initial CONFIG:', window.CONFIG);
@@ -283,11 +286,23 @@ export async function addToGoogleSheetsRecord(winners, losers) {
             throw new Error('Google Apps Script URL이 설정되지 않았습니다. scriptId 파라미터를 확인해주세요.');
         }
 
+        // 단일 배열 형식으로 데이터 구성
+        // [승리팀 5명, 빈칸, 패배팀 5명, 빈칸, MVP, ACE]
+        const rows = [
+            ...winners,      // 0-4: 승리팀 (탑, 정글, 미드, 원딜, 서폿)
+            '',              // 5: 빈칸
+            ...losers,       // 6-10: 패배팀 (탑, 정글, 미드, 원딜, 서폿)
+            '',              // 11: 빈칸
+            mvp || '',       // 12: MVP
+            ace || ''        // 13: ACE
+        ];
+
+        const requestBody = {
+            rows: rows
+        };
+
         console.log('Sending request to:', window.CONFIG.GOOGLE_APPS_SCRIPT_URL);
-        console.log('Request body:', JSON.stringify({
-            winners: winners,
-            losers: losers
-        }));
+        console.log('Request body:', JSON.stringify(requestBody));
 
         const response = await fetch(window.CONFIG.GOOGLE_APPS_SCRIPT_URL, {
             method: 'POST',
@@ -295,10 +310,7 @@ export async function addToGoogleSheetsRecord(winners, losers) {
             headers: {
                 'Content-Type': 'text/plain;charset=utf-8',
             },
-            body: JSON.stringify({
-                winners: winners,
-                losers: losers
-            })
+            body: JSON.stringify(requestBody)
         });
 
         const responseText = await response.text();

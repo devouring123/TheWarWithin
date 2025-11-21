@@ -28,17 +28,42 @@ export function handlePlayerClick(playerName) {
         // 이미 선택된 플레이어 -> 선택 해제
         console.log("Player already selected, removing from selection");
         selectedPlayers.splice(playerIndex, 1);
-        card.classList.remove('selected');
+        card.classList.remove('selected', 'selected-first', 'selected-second');
+
+        // 남은 플레이어 재정렬 (두번째가 첫번째로)
+        updateSelectedPlayerStyles();
     } else {
         // 새 플레이어 선택
         console.log("Adding player to selection");
         if (selectedPlayers.length < 2) {
-            selectedPlayers.push(playerName); // 대소문자 구분 없이 처리하도록 수정
-            card.classList.add('selected');
+            selectedPlayers.push(playerName);
+
+            // 선택 순서에 따라 클래스 적용
+            if (selectedPlayers.length === 1) {
+                card.classList.add('selected', 'selected-first');
+            } else {
+                card.classList.add('selected', 'selected-second');
+            }
         } else {
             alert('최대 2명의 플레이어만 선택할 수 있습니다.');
             return; // 3명 이상 선택 시 함수 종료
         }
+    }
+
+    // 선택된 플레이어 스타일 업데이트 함수
+    function updateSelectedPlayerStyles() {
+        // 모든 선택 클래스 제거 후 재적용
+        selectedPlayers.forEach((name, idx) => {
+            const playerCard = document.getElementById(`player-card-${name}`);
+            if (playerCard) {
+                playerCard.classList.remove('selected-first', 'selected-second');
+                if (idx === 0) {
+                    playerCard.classList.add('selected-first');
+                } else if (idx === 1) {
+                    playerCard.classList.add('selected-second');
+                }
+            }
+        });
     }
 
     console.log("Selected players:", selectedPlayers);
@@ -232,10 +257,16 @@ function renderAllPlayerComparison(selectedPlayerName) {
     }
 
     console.log("Selected player data:", selectedPlayer);
-    
+
     // 자기 자신의 기본 통계는 항상 표시하지만, 5판 미만인 경우 상대전적/시너지는 표시 안함
     const totalGamesPlayed = selectedPlayer.total_wins + selectedPlayer.total_losses;
     const showDetailedStats = totalGamesPlayed >= 5;
+
+    // 플레이어의 최근 5경기 가져오기
+    const recentGames = getPlayerRecentGames(selectedPlayerName, 5);
+
+    // MVP/ACE 카운트 계산
+    const mvpAceCounts = getPlayerMvpAceCounts(selectedPlayerName);
 
     // 모든 다른 플레이어와의 전적 계산
     const playerComparisons = [];
@@ -349,9 +380,118 @@ function renderAllPlayerComparison(selectedPlayerName) {
 
     // HTML 생성
     let html = `
-        <h4>${selectedPlayer.name} ${getTierBadgeHtml(selectedPlayer.tier)} - 전적 분석</h4>
-        <p>전체 전적: ${selectedPlayer.total_wins}승 ${selectedPlayer.total_losses}패 (${(selectedPlayer.overall_winrate * 100).toFixed(1)}%)</p>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="mb-0">${selectedPlayer.name} ${getTierBadgeHtml(selectedPlayer.tier)} - 전적 분석</h4>
+            <span>
+                전체 전적: ${selectedPlayer.total_wins}승 ${selectedPlayer.total_losses}패 (${(selectedPlayer.overall_winrate * 100).toFixed(1)}%)
+                <span class="ms-3">
+                    <span style="color: #9333EA;"><i class="fas fa-crown me-1"></i>MVP ${mvpAceCounts.mvpCount}회</span>
+                    <span class="ms-2" style="color: #10B981;"><i class="fas fa-medal me-1"></i>ACE ${mvpAceCounts.aceCount}회</span>
+                </span>
+            </span>
+        </div>
     `;
+
+    // 최근 5경기 표시
+    if (recentGames.length > 0) {
+        // 최근 5경기에서 MVP/ACE 카운트
+        const recentMvpCount = recentGames.filter(g => g.mvp && g.mvp.toLowerCase() === selectedPlayerName.toLowerCase()).length;
+        const recentAceCount = recentGames.filter(g => g.ace && g.ace.toLowerCase() === selectedPlayerName.toLowerCase()).length;
+
+        html += `
+            <div class="recent-matches-section mb-4">
+                <h5>
+                    <i class="fas fa-history me-2"></i>최근 ${recentGames.length}경기
+                    <span class="ms-2" style="font-size: 0.85rem;">
+                        <span style="color: #9333EA;"><i class="fas fa-crown me-1"></i>${recentMvpCount}</span>
+                        <span class="ms-1" style="color: #10B981;"><i class="fas fa-medal me-1"></i>${recentAceCount}</span>
+                    </span>
+                </h5>
+                <div class="match-group" style="margin-bottom: 0;">
+                    ${recentGames.map((game, index) => {
+                        // 날짜 포맷팅 (월/일만)
+                        let dateStr = '-';
+                        if (game.date) {
+                            let parsedDate = new Date(game.date);
+                            if (isNaN(parsedDate.getTime())) {
+                                const dateMatch = game.date.match(/(\d{4})[./-](\d{1,2})[./-](\d{1,2})/);
+                                if (dateMatch) {
+                                    parsedDate = new Date(dateMatch[1], dateMatch[2] - 1, dateMatch[3]);
+                                }
+                            }
+                            if (!isNaN(parsedDate.getTime())) {
+                                const month = parsedDate.getMonth() + 1;
+                                const day = parsedDate.getDate();
+                                dateStr = `${month}/${day}`;
+                            } else {
+                                dateStr = game.date.length > 10 ? game.date.substring(5, 10) : game.date;
+                            }
+                        }
+
+                        // 팀 이름 포맷팅 (첫글자 대문자, 가운뎃점 구분)
+                        const formatName = (name) => name.charAt(0).toUpperCase() + name.slice(1);
+
+                        // 본인이 승리팀에 있는지 확인
+                        const isPlayerInWinners = game.winners.some(name =>
+                            name.toLowerCase() === selectedPlayerName.toLowerCase()
+                        );
+
+                        // 본인 팀을 왼쪽에 배치
+                        const leftTeam = isPlayerInWinners ? game.winners : game.losers;
+                        const rightTeam = isPlayerInWinners ? game.losers : game.winners;
+                        const leftIsWinner = isPlayerInWinners;
+
+                        const leftTeamStr = leftTeam.map(formatName).join(' · ');
+                        const rightTeamStr = rightTeam.map(formatName).join(' · ');
+
+                        // 플레이어 하이라이트 (본인, MVP, ACE)
+                        const highlightPlayers = (str, isWinnerSide) => {
+                            let result = str;
+
+                            // 본인 하이라이트 (박스)
+                            const selfRegex = new RegExp(`(${selectedPlayerName})`, 'gi');
+                            result = result.replace(selfRegex, `<span style="background: #e3f2fd; padding: 2px 6px; border-radius: 4px; border: 1px solid #90caf9; font-weight: 600;">$1</span>`);
+
+                            // MVP 하이라이트 (승리팀에서)
+                            if (game.mvp && isWinnerSide) {
+                                const mvpRegex = new RegExp(`(${game.mvp})`, 'gi');
+                                result = result.replace(mvpRegex, `<span style="color: #9333EA;" class="fw-bold"><i class="fas fa-crown me-1"></i>$1</span>`);
+                            }
+                            // ACE 하이라이트 (패배팀에서)
+                            if (game.ace && !isWinnerSide) {
+                                const aceRegex = new RegExp(`(${game.ace})`, 'gi');
+                                result = result.replace(aceRegex, `<span style="color: #10B981;" class="fw-bold"><i class="fas fa-medal me-1"></i>$1</span>`);
+                            }
+                            return result;
+                        };
+
+                        return `
+                            <div class="match-row" data-match-index="${index}">
+                                <div class="match-round">
+                                    <span class="match-date">${dateStr}</span>
+                                </div>
+                                <div class="match-team ${leftIsWinner ? 'win-team' : 'lose-team'} left-team">
+                                    <span class="team-badge ${leftIsWinner ? 'win' : 'lose'}">${leftIsWinner ? 'W' : 'L'}</span>
+                                    <span class="team-players">${highlightPlayers(leftTeamStr, leftIsWinner)}</span>
+                                </div>
+                                <div class="match-vs">VS</div>
+                                <div class="match-team ${leftIsWinner ? 'lose-team' : 'win-team'} right-team">
+                                    <span class="team-players">${highlightPlayers(rightTeamStr, !leftIsWinner)}</span>
+                                    <span class="team-badge ${leftIsWinner ? 'lose' : 'win'}">${leftIsWinner ? 'L' : 'W'}</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    } else {
+        html += `
+            <div class="alert alert-info mb-4">
+                <i class="fas fa-info-circle me-2"></i>최근 경기 기록이 없습니다.
+            </div>
+        `;
+    }
 
     // 상대 전적과 시너지 차트 생성 (한 줄에 같이 표시)
     if ((topRivals.length > 0 || bottomRivals.length > 0) || (topTeammates.length > 0 || bottomTeammates.length > 0)) {
@@ -421,9 +561,12 @@ function renderComparePlayerDetails(player1Name, player2Name) {
     console.log("Comparing players:", player1Name, player2Name);
     const headToHead = calculateHeadToHead(player1Name, player2Name);
     const teamedUp = calculateTeamedUpWinrate(player1Name, player2Name);
-    
+
     // 포지션별 상대 전적 계산
     const positionHeadToHead = calculatePositionHeadToHead(player1Name, player2Name);
+
+    // 상성 배지 계산
+    const synergyBadges = getSynergyBadgeHtml(player1Name, player2Name);
 
     // 포지션별 상대 전적 테이블 HTML 생성 (뱃지 형식)
     let positionTableHTML = '';
@@ -499,10 +642,11 @@ function renderComparePlayerDetails(player1Name, player2Name) {
                 <p>${player2.total_wins}승 ${player2.total_losses}패 (${(player2.overall_winrate * 100).toFixed(1)}%)</p>
             </div>
         </div>
+        ${synergyBadges ? `<div class="text-center mb-3">${synergyBadges}</div>` : ''}
         ${showDetailedStats ? `
         <hr>
         <h5>상대 전적 (적으로 만났을 때):</h5>
-        ${headToHead.totalGames >= 3 ? 
+        ${headToHead.totalGames >= 3 ?
             `<p>${player1Name} 기준: <strong>${headToHead.player1Wins}승 ${headToHead.player2Wins}패</strong> (총 ${headToHead.totalGames}게임)</p>` :
             `<p class="text-muted">상대 전적을 보려면 최소 3판 이상의 경기가 필요합니다. (현재 ${headToHead.totalGames}게임)</p>`
         }
@@ -709,12 +853,172 @@ function getPlayerPositionInGame(record, playerName, position) {
     if (winnerIndex !== -1 && winnerIndex === getPositionIndex(position)) {
         return true;
     }
-    
+
     // 패자 팀에서 플레이어 찾기
     const loserIndex = record.losers.findIndex(name => name.toLowerCase() === playerName);
     if (loserIndex !== -1 && loserIndex === getPositionIndex(position)) {
         return true;
     }
-    
+
     return false;
+}
+
+// 플레이어의 최근 N경기 폼 계산 (승/패 배열 반환)
+export function getPlayerRecentForm(playerName, maxGames = 5) {
+    if (!gameRecords || !Array.isArray(gameRecords)) return [];
+
+    const playerNameLower = playerName.toLowerCase();
+    const recentGames = [];
+
+    // 게임 기록을 역순으로 순회 (최신 기록부터)
+    for (let i = gameRecords.length - 1; i >= 0 && recentGames.length < maxGames; i--) {
+        const record = gameRecords[i];
+        if (!record || !record.winners || !record.losers) continue;
+
+        const inWinners = record.winners.some(name => name.toLowerCase() === playerNameLower);
+        const inLosers = record.losers.some(name => name.toLowerCase() === playerNameLower);
+
+        if (inWinners) {
+            recentGames.push('win');
+        } else if (inLosers) {
+            recentGames.push('loss');
+        }
+    }
+
+    return recentGames;
+}
+
+// 플레이어의 최근 N경기 상세 정보 반환
+export function getPlayerRecentGames(playerName, maxGames = 5) {
+    if (!gameRecords || !Array.isArray(gameRecords)) return [];
+
+    const playerNameLower = playerName.toLowerCase();
+    const recentGames = [];
+
+    // 게임 기록을 역순으로 순회 (최신 기록부터)
+    for (let i = gameRecords.length - 1; i >= 0 && recentGames.length < maxGames; i--) {
+        const record = gameRecords[i];
+        if (!record || !record.winners || !record.losers) continue;
+
+        const inWinners = record.winners.some(name => name.toLowerCase() === playerNameLower);
+        const inLosers = record.losers.some(name => name.toLowerCase() === playerNameLower);
+
+        if (inWinners || inLosers) {
+            recentGames.push({
+                date: record.date || '',
+                isWin: inWinners,
+                winners: record.winners,
+                losers: record.losers,
+                myTeam: inWinners ? record.winners : record.losers,
+                enemyTeam: inWinners ? record.losers : record.winners,
+                mvp: record.mvp || '',
+                ace: record.ace || ''
+            });
+        }
+    }
+
+    return recentGames;
+}
+
+// 최근 폼 HTML 생성
+export function getRecentFormHtml(playerName) {
+    const form = getPlayerRecentForm(playerName);
+    if (form.length === 0) return '';
+
+    return `
+        <span class="recent-form d-flex gap-1">
+            ${form.map(result =>
+                `<span style="width: 8px; height: 8px; border-radius: 50%; background: ${result === 'win' ? '#10B981' : '#EF4444'}; display: inline-block;" title="${result === 'win' ? '승리' : '패배'}"></span>`
+            ).join('')}
+        </span>
+    `;
+}
+
+// 두 플레이어의 상성 계산
+export function calculateSynergy(player1Name, player2Name) {
+    if (!gameRecords || !Array.isArray(gameRecords)) {
+        return { sameTeamWinRate: 0, sameTeamGames: 0, vsWinRate: 0, vsGames: 0 };
+    }
+
+    const p1Name = player1Name.toLowerCase();
+    const p2Name = player2Name.toLowerCase();
+
+    let sameTeamWins = 0;
+    let sameTeamGames = 0;
+    let p1WinsVsP2 = 0;
+    let vsGames = 0;
+
+    gameRecords.forEach(record => {
+        if (!record || !record.winners || !record.losers) return;
+
+        const p1InWinners = record.winners.some(name => name.toLowerCase() === p1Name);
+        const p2InWinners = record.winners.some(name => name.toLowerCase() === p2Name);
+        const p1InLosers = record.losers.some(name => name.toLowerCase() === p1Name);
+        const p2InLosers = record.losers.some(name => name.toLowerCase() === p2Name);
+
+        // 같은 팀
+        if ((p1InWinners && p2InWinners) || (p1InLosers && p2InLosers)) {
+            sameTeamGames++;
+            if (p1InWinners && p2InWinners) {
+                sameTeamWins++;
+            }
+        }
+
+        // 상대 팀
+        if ((p1InWinners && p2InLosers) || (p1InLosers && p2InWinners)) {
+            vsGames++;
+            if (p1InWinners) {
+                p1WinsVsP2++;
+            }
+        }
+    });
+
+    return {
+        sameTeamWinRate: sameTeamGames > 0 ? (sameTeamWins / sameTeamGames) * 100 : 0,
+        sameTeamGames,
+        vsWinRate: vsGames > 0 ? (p1WinsVsP2 / vsGames) * 100 : 0,
+        vsGames
+    };
+}
+
+// 상성 배지 HTML 생성
+export function getSynergyBadgeHtml(player1Name, player2Name) {
+    const synergy = calculateSynergy(player1Name, player2Name);
+    const badges = [];
+
+    // 듀오 배지: 같은 팀 승률 75% 이상, 최소 4경기 이상
+    if (synergy.sameTeamGames >= 4 && synergy.sameTeamWinRate >= 75) {
+        badges.push(`<span class="synergy-badge duo"><i class="fas fa-bolt me-1"></i>영혼의 듀오</span>`);
+    }
+
+    // 천적 배지: 상대 팀 승률 25% 미만, 최소 4경기 이상
+    if (synergy.vsGames >= 4 && synergy.vsWinRate <= 25) {
+        badges.push(`<span class="synergy-badge nemesis"><i class="fas fa-skull me-1"></i>천적 관계</span>`);
+    }
+
+    return badges.join('');
+}
+
+// 플레이어의 MVP/ACE 카운트 계산
+export function getPlayerMvpAceCounts(playerName) {
+    if (!gameRecords || !Array.isArray(gameRecords)) {
+        return { mvpCount: 0, aceCount: 0 };
+    }
+
+    const playerNameLower = playerName.toLowerCase();
+    let mvpCount = 0;
+    let aceCount = 0;
+
+    gameRecords.forEach(record => {
+        if (!record) return;
+
+        if (record.mvp && record.mvp.toLowerCase() === playerNameLower) {
+            mvpCount++;
+        }
+        if (record.ace && record.ace.toLowerCase() === playerNameLower) {
+            aceCount++;
+        }
+    });
+
+    return { mvpCount, aceCount };
 }
