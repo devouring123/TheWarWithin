@@ -5,7 +5,6 @@ window.CONFIG = window.CONFIG || {
     RECORDS_SHEET_GID: '339777748', // 기록 시트의 GID
     SHEET_NAME: '승률표',
     RECORDS_SHEET_NAME: '기록', // 기록 시트 이름
-    API_KEY: '', // 공개 API 키 (제한적)
     // Google Apps Script 웹 앱 URL (배포 후 받은 URL로 교체)
     GOOGLE_APPS_SCRIPT_URL: ''
 };

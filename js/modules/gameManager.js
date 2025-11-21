@@ -1,6 +1,6 @@
 import CONFIG from './config.js';
 import { updateConfig, updateScriptURL, getConfig } from './config.js';
-import { parseGoogleSheetsData, parseCSVData, parseRecordsCSV } from './dataManager.js';
+import { parseCSVData, parseRecordsCSV } from './dataManager.js';
 import { updateEloAfterGame } from './winRateDisplay.js';
 
 let gameData = null;
@@ -11,7 +11,6 @@ function getQueryParams() {
     const params = new URLSearchParams(window.location.search);
     return {
         spreadsheetId: params.get('spreadsheetId'),
-        apiKey: params.get('apiKey'),
         scriptId: params.get('scriptId')
     };
 }
@@ -21,14 +20,12 @@ function getStoredConfig() {
     try {
         const storedSpreadsheetId = localStorage.getItem('spreadsheetId');
         const storedScriptId = localStorage.getItem('scriptId');
-        const storedApiKey = localStorage.getItem('apiKey');
-        
+
         // 모든 설정 값이 있어야 함
-        if (storedSpreadsheetId && storedScriptId && storedApiKey) {
+        if (storedSpreadsheetId && storedScriptId) {
             return {
                 spreadsheetId: storedSpreadsheetId,
-                scriptId: storedScriptId,
-                apiKey: storedApiKey
+                scriptId: storedScriptId
             };
         }
         return null;
@@ -39,13 +36,10 @@ function getStoredConfig() {
 }
 
 // 로컬 스토리지에 설정 저장
-function storeConfig(spreadsheetId, scriptId, apiKey) {
+function storeConfig(spreadsheetId, scriptId) {
     try {
         localStorage.setItem('spreadsheetId', spreadsheetId);
         localStorage.setItem('scriptId', scriptId);
-        if (apiKey) {
-            localStorage.setItem('apiKey', apiKey);
-        }
     } catch (error) {
         console.warn('로컬 스토리지에 설정을 저장하는 중 오류 발생:', error);
     }
@@ -56,19 +50,18 @@ function showConfigForm() {
     return new Promise((resolve) => {
         // URL에서 쿼리 파라미터 가져오기
         const queryParams = getQueryParams();
-        if (queryParams.spreadsheetId && queryParams.apiKey && queryParams.scriptId) {
+        if (queryParams.spreadsheetId && queryParams.scriptId) {
             // 쿼리 파라미터가 모두 있으면 바로 사용
             updateConfig({
-                SPREADSHEET_ID: queryParams.spreadsheetId,
-                API_KEY: queryParams.apiKey
+                SPREADSHEET_ID: queryParams.spreadsheetId
             });
-            
+
             // Google Apps Script URL 업데이트
             updateScriptURL(queryParams.scriptId);
-            
+
             // 로컬 스토리지에 설정 저장
-            storeConfig(queryParams.spreadsheetId, queryParams.scriptId, queryParams.apiKey);
-            
+            storeConfig(queryParams.spreadsheetId, queryParams.scriptId);
+
             // 로딩 화면 표시
             const loadingEl = document.getElementById('loading');
             loadingEl.style.display = 'flex';
@@ -80,23 +73,22 @@ function showConfigForm() {
                     <p class="text-light">URL 파라미터로 설정된 데이터를 불러오는 중...</p>
                 </div>
             `;
-            
+
             resolve();
             return;
         }
-        
+
         // 로컬 스토리지에서 저장된 설정 확인
         const storedConfig = getStoredConfig();
-        if (storedConfig && storedConfig.spreadsheetId && storedConfig.scriptId && storedConfig.apiKey) {
+        if (storedConfig && storedConfig.spreadsheetId && storedConfig.scriptId) {
             // 저장된 설정이 모두 있으면 바로 사용
             updateConfig({
-                SPREADSHEET_ID: storedConfig.spreadsheetId,
-                API_KEY: storedConfig.apiKey
+                SPREADSHEET_ID: storedConfig.spreadsheetId
             });
-            
+
             // Google Apps Script URL 업데이트
             updateScriptURL(storedConfig.scriptId);
-            
+
             // 로딩 화면 표시
             const loadingEl = document.getElementById('loading');
             loadingEl.style.display = 'flex';
@@ -108,15 +100,15 @@ function showConfigForm() {
                     <p class="text-light">저장된 설정으로 데이터를 불러오는 중...</p>
                 </div>
             `;
-            
+
             resolve();
             return;
         }
-        
+
         // 저장된 설정이 없거나 불완전하면 입력 폼 표시
         // 기존 로딩 화면 숨기기
         document.getElementById('loading').style.display = 'none';
-        
+
         // 설정 입력 폼 생성
         const configFormHTML = `
             <div class="card text-center" style="max-width: 700px; margin: 0 auto;">
@@ -127,12 +119,6 @@ function showConfigForm() {
                     <div class="mb-3 text-start">
                         <label for="spreadsheetId" class="form-label">스프레드시트 ID</label>
                         <input type="text" class="form-control" id="spreadsheetId" placeholder="">
-                    </div>
-                    
-                    <div class="mb-3 text-start">
-                        <label for="apiKey" class="form-label">Google Sheets API 키</label>
-                        <input type="password" class="form-control" id="apiKey" placeholder="">
-                        <div class="form-text">Google Cloud Platform에서 생성한 API 키 (AIza로 시작)</div>
                     </div>
                     
                     <div class="mb-3 text-start">
@@ -156,43 +142,40 @@ function showConfigForm() {
                 </div>
             </div>
         `;
-        
+
         const loadingEl = document.getElementById('loading');
         loadingEl.style.display = 'flex';
         loadingEl.innerHTML = configFormHTML;
-        
+
         // 계속 버튼 이벤트 리스너
-        document.getElementById('continueBtn').addEventListener('click', function() {
+        document.getElementById('continueBtn').addEventListener('click', function () {
             // 입력된 정보를 실제로 사용
             const spreadsheetId = document.getElementById('spreadsheetId').value.trim();
-            const apiKey = document.getElementById('apiKey').value.trim();
             const scriptId = document.getElementById('scriptId').value.trim();
-            
+
             // 모든 필드가 입력되었는지 확인
-            if (!spreadsheetId || !apiKey || !scriptId) {
+            if (!spreadsheetId || !scriptId) {
                 alert('모든 필드를 입력해주세요.');
                 return;
             }
-            
+
             // 설정 업데이트
             updateConfig({
-                SPREADSHEET_ID: spreadsheetId,
-                API_KEY: apiKey
+                SPREADSHEET_ID: spreadsheetId
             });
-            
+
             // Google Apps Script URL 업데이트
             updateScriptURL(scriptId);
-            
+
             // 로컬 스토리지에 설정 저장
-            storeConfig(spreadsheetId, scriptId, apiKey);
-            
+            storeConfig(spreadsheetId, scriptId);
+
             // 업데이트된 설정 값 출력
             console.log('설정 업데이트 완료:', {
                 spreadsheetId: spreadsheetId,
-                apiKey: apiKey,
                 scriptId: scriptId
             });
-            
+
             loadingEl.innerHTML = `
                 <div class="text-center">
                     <div class="spinner-border text-light mb-3" role="status">
@@ -201,7 +184,7 @@ function showConfigForm() {
                     <p class="text-light">설정을 확인하고 데이터를 불러오는 중...</p>
                 </div>
             `;
-            
+
             resolve();
         });
     });
@@ -214,17 +197,17 @@ export async function loadData(showConfigFormFlag = true) {
         if (showConfigFormFlag) {
             await showConfigForm();
         }
-        
+
         // 현재 CONFIG 값을 가져오기
         const currentConfig = getConfig();
-        
+
         // 설정 값이 있는지 확인
-        if (!currentConfig.SPREADSHEET_ID || !currentConfig.GOOGLE_APPS_SCRIPT_URL || !currentConfig.API_KEY) {
-            throw new Error('필수 설정 값이 없습니다. 스프레드시트 ID, API 키, Google Apps Script URL을 입력해주세요.');
+        if (!currentConfig.SPREADSHEET_ID || !currentConfig.GOOGLE_APPS_SCRIPT_URL) {
+            throw new Error('필수 설정 값이 없습니다. 스프레드시트 ID, Google Apps Script URL을 입력해주세요.');
         }
-        
+
         showLoading('Google Sheets에서 실시간 데이터를 불러오는 중...');
-        
+
         // 승률표 데이터 로드 (CSV 우선, API 보조)
         const csvUrl = `https://docs.google.com/spreadsheets/d/${currentConfig.SPREADSHEET_ID}/export?format=csv&gid=${currentConfig.SHEET_GID}`;
         try {
@@ -238,20 +221,8 @@ export async function loadData(showConfigFormFlag = true) {
                 throw new Error('승률표 CSV 접근 실패');
             }
         } catch (csvError) {
-            console.warn('승률표 CSV 방식 실패, API 방식 시도...', csvError);
-            // API 키가 있는 경우에만 API 방식 시도
-            if (currentConfig.API_KEY) {
-                const apiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${currentConfig.SPREADSHEET_ID}/values/${encodeURIComponent(currentConfig.SHEET_NAME)}!A:U?key=${currentConfig.API_KEY}`;
-                const apiResponse = await fetch(apiUrl);
-                if (!apiResponse.ok) {
-                    throw new Error(`승률표 스프레드시트에 접근할 수 없습니다. 상태 코드: ${apiResponse.status}`);
-                }
-                const data = await apiResponse.json();
-                gameData = parseGoogleSheetsData(data.values);
-                console.log('✅ 승률표 API 방식으로 데이터 로드 성공');
-            } else {
-                throw new Error('CSV 방식과 API 방식 모두 실패했습니다. API 키를 입력해주세요.');
-            }
+            console.warn('승률표 CSV 방식 실패', csvError);
+            throw new Error('CSV 방식 데이터 로드에 실패했습니다. 스프레드시트 공개 설정을 확인해주세요.');
         }
 
         // 기록 시트 데이터 로드 (CSV 방식만 사용)
@@ -272,9 +243,9 @@ export async function loadData(showConfigFormFlag = true) {
             // 기록 시트 로드 실패는 치명적이지 않으므로 경고만 표시
             alert('게임 기록 데이터를 불러오는 데 실패했습니다. 플레이어 비교 기능이 제한될 수 있습니다.');
         }
-        
+
         return { gameData, gameRecords };
-        
+
     } catch (error) {
         console.error('데이터 로드 오류:', error);
         throw error;
@@ -286,11 +257,11 @@ export async function addToGoogleSheetsRecord(winners, losers) {
     try {
         // CONFIG가 비어있으면 URL 파라미터나 localStorage에서 설정 재로드
         console.log('Initial CONFIG:', window.CONFIG);
-        
+
         if (!window.CONFIG.GOOGLE_APPS_SCRIPT_URL) {
             const queryParams = getQueryParams();
             console.log('Query params:', queryParams);
-            
+
             if (queryParams.scriptId) {
                 console.log('Updating with query scriptId:', queryParams.scriptId);
                 updateScriptURL(queryParams.scriptId);
@@ -298,7 +269,7 @@ export async function addToGoogleSheetsRecord(winners, losers) {
             } else {
                 const storedConfig = getStoredConfig();
                 console.log('Stored config:', storedConfig);
-                
+
                 if (storedConfig && storedConfig.scriptId) {
                     console.log('Updating with stored scriptId:', storedConfig.scriptId);
                     updateScriptURL(storedConfig.scriptId);
@@ -306,18 +277,18 @@ export async function addToGoogleSheetsRecord(winners, losers) {
                 }
             }
         }
-        
+
         // 여전히 URL이 없으면 에러
         if (!window.CONFIG.GOOGLE_APPS_SCRIPT_URL) {
             throw new Error('Google Apps Script URL이 설정되지 않았습니다. scriptId 파라미터를 확인해주세요.');
         }
-        
+
         console.log('Sending request to:', window.CONFIG.GOOGLE_APPS_SCRIPT_URL);
         console.log('Request body:', JSON.stringify({
             winners: winners,
             losers: losers
         }));
-        
+
         const response = await fetch(window.CONFIG.GOOGLE_APPS_SCRIPT_URL, {
             method: 'POST',
             mode: 'cors',
@@ -359,31 +330,31 @@ export async function addToGoogleSheetsRecord(winners, losers) {
 export function handleTeamWin(winningTeam, team1InputValue, team2InputValue) {
     const team1Input = team1InputValue.trim();
     const team2Input = team2InputValue.trim();
-    
+
     if (!team1Input || !team2Input) {
         alert('두 팀의 플레이어를 모두 입력해주세요.');
         return null;
     }
-    
+
     try {
         const team1Players = parseTeamInput(team1Input);
         const team2Players = parseTeamInput(team2Input);
-        
+
         if (team1Players.length !== 5) {
             alert(`팀 1에 정확히 5명의 플레이어가 필요합니다. 현재 ${team1Players.length}명 입력되었습니다.`);
             return null;
         }
-        
+
         if (team2Players.length !== 5) {
             alert(`팀 2에 정확히 5명의 플레이어가 필요합니다. 현재 ${team2Players.length}명 입력되었습니다.`);
             return null;
         }
-        
+
         const gameResult = {
             winners: winningTeam === 1 ? team1Players : team2Players,
             losers: winningTeam === 1 ? team2Players : team1Players
         };
-        
+
         // ELO 레이팅 업데이트
         try {
             updateEloAfterGame(gameResult.winners, gameResult.losers).catch(error => {
@@ -392,9 +363,9 @@ export function handleTeamWin(winningTeam, team1InputValue, team2InputValue) {
         } catch (error) {
             console.warn('ELO 업데이트 중 오류:', error);
         }
-        
+
         return gameResult;
-        
+
     } catch (error) {
         alert('입력 데이터를 처리하는 중 오류가 발생했습니다: ' + error.message);
         return null;
@@ -407,7 +378,7 @@ function parseTeamInput(input) {
     const names = input.split(/\n/)
         .map(name => name.trim())
         .filter(name => name.length > 0);
-    
+
     return names;
 }
 
@@ -423,7 +394,7 @@ function showLoading(message = '데이터를 불러오는 중...') {
             <p class="text-light">${message}</p>
         </div>
     `;
-    
+
     document.getElementById('content').style.display = 'none';
 }
 
