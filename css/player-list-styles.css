@@ -1,13 +1,13 @@
-/* 플레이어 목록 스타일 개선 */
+/* 플레이어 목록 스타일 개선 - Dark Mode */
 .player-card .card-title {
-    font-size: 1.2rem !important;
+    font-size: 1.1rem !important;
     font-weight: 600 !important;
     line-height: 1.2;
-    color: #212529;
+    color: #fafafa;
 }
 
 .player-card .card-title:hover {
-    color: #0d6efd;
+    color: #8b5cf6;
     transition: color 0.2s ease;
 }
 
@@ -20,7 +20,7 @@
 
 @media (min-width: 1200px) {
     .player-card .card-title {
-        font-size: 1.1rem !important;
+        font-size: 1rem !important;
     }
 }
 
@@ -75,17 +75,17 @@
     border: 1px solid #4e2d91;
 }
 
-/* 선택된 플레이어 카드 스타일 */
+/* 선택된 플레이어 카드 스타일 - Dark Mode */
 .player-card.selected-first {
-    background: #d4edda !important;
-    border: 2px solid #28a745 !important;
-    box-shadow: 0 0 10px rgba(40, 167, 69, 0.3) !important;
+    background: rgba(16, 185, 129, 0.1) !important;
+    border: 2px solid #10b981 !important;
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.3) !important;
 }
 
 .player-card.selected-second {
-    background: #f8d7da !important;
-    border: 2px solid #dc3545 !important;
-    box-shadow: 0 0 10px rgba(220, 53, 69, 0.3) !important;
+    background: rgba(239, 68, 68, 0.1) !important;
+    border: 2px solid #ef4444 !important;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.3) !important;
 }
 
 /* 티어 배지 스타일 */
