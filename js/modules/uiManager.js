@@ -1,6 +1,6 @@
 import { getWinrateClass, getPositionName } from './utils.js';
 import { handleTeamWin as handleTeamWinGame, addToGoogleSheetsRecord } from './gameManager.js';
-import { clearPlayerSelection, getRecentFormHtml } from './playerManager.js';
+import { clearPlayerSelection, getRecentFormHtml, getSelectedPlayers } from './playerManager.js';
 import { setupTeamBuilder, clearTeamSelection, getSelectedTeams, resetToWaitingAreaWithTeams } from './teamBuilder.js';
 
 // MVP/ACE 선택 관련 전역 변수
@@ -193,7 +193,7 @@ export function renderPlayersList(gameData, selectedPlayers, handlePlayerClick) 
         const recentForm = getRecentFormHtml(player.name);
 
         return `
-            <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3" onclick="handlePlayerClick('${player.name}')">
+            <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3" onclick="handlePlayerClick('${player.name}')" oncontextmenu="event.preventDefault(); if(document.getElementById('player-card-${player.name}').classList.contains('selected')) { handlePlayerClick('${player.name}'); }">
                 <div class="card player-card h-100" id="player-card-${player.name}">
                     <div class="card-body p-2 d-flex flex-column">
                         <div class="d-flex justify-content-between align-items-start mb-1">
@@ -616,6 +616,16 @@ export function setupEventListeners() {
     } else {
         console.log("clearSelectionBtn not found!");
     }
+
+    // ESC 키로 플레이어 선택 초기화
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const selectedPlayers = getSelectedPlayers();
+            if (selectedPlayers.length > 0) {
+                clearPlayerSelection();
+            }
+        }
+    });
 }
 
 // MVP/ACE 모달 열기

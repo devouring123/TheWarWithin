@@ -1001,8 +1001,8 @@ export function getSynergyBadgeHtml(player1Name, player2Name, isSinglePlayer = f
     // 플레이어 개인 승률 가져오기
     const player1 = gameData?.players?.find(p => p.name.toLowerCase() === player1Name.toLowerCase());
     const player2 = gameData?.players?.find(p => p.name.toLowerCase() === player2Name.toLowerCase());
-    const p1WinRate = player1?.winRate || 0;
-    const p2WinRate = player2?.winRate || 0;
+    const p1WinRate = (player1?.overall_winrate || 0) * 100;
+    const p2WinRate = (player2?.overall_winrate || 0) * 100;
 
     // 1인 선택 시 포지션 태그만 표시
     if (isSinglePlayer) {
@@ -1020,28 +1020,28 @@ export function getSynergyBadgeHtml(player1Name, player2Name, isSinglePlayer = f
     if (synergy.sameTeamGames >= 5 && synergy.sameTeamWinRate >= 65) {
         badges.push(`<span class="synergy-badge duo" title="같은 팀 승률 65% 이상"><i class="fas fa-bolt me-1"></i>영혼의 듀오</span>`);
     }
-    // 합쳐서 3인분: 둘 다 개인 승률 50% 미만인데 뭉치면 65% 이상
-    else if (synergy.sameTeamGames >= 5 && p1WinRate < 50 && p2WinRate < 50 && synergy.sameTeamWinRate >= 65) {
-        badges.push(`<span class="synergy-badge synergy-boost" title="각자 승률 50% 미만, 같은 팀 승률 65% 이상"><i class="fas fa-hand-holding-heart me-1"></i>합쳐서 3인분</span>`);
+    // 합쳐서 3인분: 둘 다 개인 승률 50% 미만인데 뭉치면 60% 이상
+    if (synergy.sameTeamGames >= 5 && p1WinRate < 50 && p2WinRate < 50 && synergy.sameTeamWinRate >= 60) {
+        badges.push(`<span class="synergy-badge synergy-boost" title="각자 승률 50% 미만, 같은 팀 승률 60% 이상"><i class="fas fa-hand-holding-heart me-1"></i>합쳐서 3인분</span>`);
     }
     // 패트와 매트: 같은 팀 승률 35% 이하, 최소 5경기 이상
-    else if (synergy.sameTeamGames >= 5 && synergy.sameTeamWinRate <= 35) {
+    if (synergy.sameTeamGames >= 5 && synergy.sameTeamWinRate <= 35) {
         badges.push(`<span class="synergy-badge bad-duo" title="같은 팀 승률 35% 이하"><i class="fas fa-tools me-1"></i>패트와 매트</span>`);
     }
-    // 억제기 듀오: 둘 다 개인 승률 50% 이상인데 뭉치면 35% 미만
-    else if (synergy.sameTeamGames >= 5 && p1WinRate >= 50 && p2WinRate >= 50 && synergy.sameTeamWinRate < 35) {
-        badges.push(`<span class="synergy-badge inhibitor" title="각자 승률 50% 이상, 같은 팀 승률 35% 미만"><i class="fas fa-unlink me-1"></i>억제기 듀오</span>`);
+    // 불협화음: 둘 다 개인 승률 50% 초과인데 뭉치면 40% 이하
+    if (synergy.sameTeamGames >= 5 && p1WinRate > 50 && p2WinRate > 50 && synergy.sameTeamWinRate <= 40) {
+        badges.push(`<span class="synergy-badge inhibitor" title="각자 승률 50% 초과, 같은 팀 승률 40% 이하"><i class="fas fa-unlink me-1"></i>불협화음</span>`);
     }
 
     // === 상대 팀 관련 태그 ===
 
-    // 천적 배지: 상대 팀 승률 35% 이하, 최소 5경기 이상
+    // 먹잇감: 상대 팀 승률 35% 이하, 최소 5경기 이상
     if (synergy.vsGames >= 5 && synergy.vsWinRate <= 35) {
-        badges.push(`<span class="synergy-badge nemesis" title="상대 시 승률 35% 이하"><i class="fas fa-skull me-1"></i>천적 관계</span>`);
+        badges.push(`<span class="synergy-badge nemesis" title="상대 시 승률 35% 이하"><i class="fas fa-skull me-1"></i>먹잇감</span>`);
     }
-    // 먹잇감: 상대 팀 승률 65% 이상, 최소 5경기 이상
+    // 사냥꾼: 상대 팀 승률 65% 이상, 최소 5경기 이상
     else if (synergy.vsGames >= 5 && synergy.vsWinRate >= 65) {
-        badges.push(`<span class="synergy-badge prey" title="상대 시 승률 65% 이상"><i class="fas fa-crosshairs me-1"></i>먹잇감</span>`);
+        badges.push(`<span class="synergy-badge prey" title="상대 시 승률 65% 이상"><i class="fas fa-crosshairs me-1"></i>사냥꾼</span>`);
     }
     // 자강두천: 상대 팀 승률 45% ~ 55% 사이, 최소 5경기 이상
     else if (synergy.vsGames >= 5 && synergy.vsWinRate >= 45 && synergy.vsWinRate <= 55) {
@@ -1109,7 +1109,46 @@ function getPositionBadgesHtml(player, playerName) {
         });
     }
 
+    // 최근 10판 MVP/ACE 태그
+    const recentMvpAce = getRecentMvpAceCounts(playerName);
+    if (recentMvpAce.mvpCount >= 3) {
+        badges.push(`<span class="synergy-badge duo" title="최근 10판 MVP 3회 이상"><i class="fas fa-crown me-1"></i>"캐리"</span>`);
+    }
+    if (recentMvpAce.aceCount >= 3) {
+        badges.push(`<span class="synergy-badge nemesis" title="최근 10판 ACE 3회 이상"><i class="fas fa-skull-crossbones me-1"></i>난 무죄야</span>`);
+    }
+
     return badges.join('');
+}
+
+// 최근 10판의 MVP/ACE 카운트 계산
+function getRecentMvpAceCounts(playerName) {
+    if (!gameRecords || !Array.isArray(gameRecords)) {
+        return { mvpCount: 0, aceCount: 0 };
+    }
+
+    const playerNameLower = playerName.toLowerCase();
+
+    // 해당 플레이어가 참여한 최근 10경기 찾기
+    const playerGames = gameRecords.filter(record => {
+        if (!record) return false;
+        const allPlayers = [...(record.winners || []), ...(record.losers || [])];
+        return allPlayers.some(p => p.toLowerCase() === playerNameLower);
+    }).slice(-10);
+
+    let mvpCount = 0;
+    let aceCount = 0;
+
+    playerGames.forEach(record => {
+        if (record.mvp && record.mvp.toLowerCase() === playerNameLower) {
+            mvpCount++;
+        }
+        if (record.ace && record.ace.toLowerCase() === playerNameLower) {
+            aceCount++;
+        }
+    });
+
+    return { mvpCount, aceCount };
 }
 
 // 플레이어의 MVP/ACE 카운트 계산
