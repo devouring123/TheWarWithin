@@ -45,8 +45,16 @@ export function handlePlayerClick(playerName) {
                 card.classList.add('selected', 'selected-second');
             }
         } else {
-            alert('최대 2명의 플레이어만 선택할 수 있습니다.');
-            return; // 3명 이상 선택 시 함수 종료
+            // 2명이 이미 선택된 경우, 2번째 플레이어를 교체
+            const secondPlayer = selectedPlayers[1];
+            const secondCard = document.getElementById(`player-card-${secondPlayer}`);
+            if (secondCard) {
+                secondCard.classList.remove('selected', 'selected-first', 'selected-second');
+            }
+
+            // 새 플레이어를 2번째로 설정
+            selectedPlayers[1] = playerName;
+            card.classList.add('selected', 'selected-second');
         }
     }
 
