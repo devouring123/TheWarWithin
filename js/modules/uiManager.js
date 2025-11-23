@@ -369,14 +369,22 @@ export function renderPlayerPositionChart(player, canvasId) {
                         },
                         font: {
                             size: 10
-                        }
+                        },
+                        color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#a1a1aa'
+                    },
+                    grid: {
+                        color: getComputedStyle(document.documentElement).getPropertyValue('--border-subtle').trim() || 'rgba(255, 255, 255, 0.06)'
                     }
                 },
                 y: {
                     ticks: {
                         font: {
                             size: 10
-                        }
+                        },
+                        color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#a1a1aa'
+                    },
+                    grid: {
+                        color: getComputedStyle(document.documentElement).getPropertyValue('--border-subtle').trim() || 'rgba(255, 255, 255, 0.06)'
                     }
                 }
             },

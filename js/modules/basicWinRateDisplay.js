@@ -28,12 +28,12 @@ function addBasicWinRateElements() {
 function createBasicWinRateElement(id) {
     const element = document.createElement('div');
     element.id = id;
-    element.className = 'basic-win-rate-display mt-2 p-2 bg-light rounded border';
+    element.className = 'basic-win-rate-display mt-2 p-2 rounded border';
     element.style.display = 'none';
     element.innerHTML = `
         <div class="text-center">
-            <div class="text-muted mb-1">승률 예측</div>
-            <div class="win-rate-value fw-bold text-primary">-</div>
+            <div class="win-rate-label mb-1">승률 예측</div>
+            <div class="win-rate-value fw-bold">-</div>
         </div>
     `;
     return element;
@@ -138,12 +138,12 @@ function getAllTeamPlayers(teamId) {
     return [...waitingPlayers, ...positionPlayers];
 }
 
-// 추가 스타일
+// 추가 스타일 - 다크/라이트 모드 지원
 const basicWinRateStyles = `
 <style>
 .basic-win-rate-display {
-    border: 1px solid #dee2e6;
-    background-color: #f8f9fa;
+    border: 1px solid var(--border-subtle, #dee2e6);
+    background-color: var(--bg-tertiary, #f8f9fa);
     border-radius: 6px;
     transition: all 0.2s ease;
 }
@@ -157,9 +157,22 @@ const basicWinRateStyles = `
     margin-top: 2px;
 }
 
-.basic-win-rate-display .text-muted {
+.basic-win-rate-display .win-rate-label {
     font-size: 0.85rem;
-    color: #6c757d;
+    color: var(--text-muted, #6c757d);
+}
+
+/* 라이트 모드 */
+[data-theme="light"] .basic-win-rate-display {
+    background-color: var(--bg-tertiary, #f1f5f9);
+    border-color: var(--border-subtle, rgba(0, 0, 0, 0.06));
+}
+
+@media (prefers-color-scheme: light) {
+    :root:not([data-theme]) .basic-win-rate-display {
+        background-color: var(--bg-tertiary, #f1f5f9);
+        border-color: var(--border-subtle, rgba(0, 0, 0, 0.06));
+    }
 }
 </style>
 `;

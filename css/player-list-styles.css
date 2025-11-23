@@ -1,14 +1,42 @@
-/* 플레이어 목록 스타일 개선 */
+/* 플레이어 목록 스타일 개선 - Dark/Light Mode */
 .player-card .card-title {
-    font-size: 1.2rem !important;
+    font-size: 1.1rem !important;
     font-weight: 600 !important;
     line-height: 1.2;
-    color: #212529;
+    color: var(--text-primary, #fafafa);
 }
 
 .player-card .card-title:hover {
-    color: #0d6efd;
+    color: var(--accent-primary, #8b5cf6);
     transition: color 0.2s ease;
+}
+
+/* 플레이어 카드 내부 텍스트 다크/라이트 모드 지원 */
+.player-card .text-muted {
+    color: var(--text-muted, #6c757d) !important;
+}
+
+.player-card .positions small,
+.player-card .position-chart small {
+    color: var(--text-secondary, #a1a1aa) !important;
+}
+
+/* 라이트 모드 플레이어 카드 */
+[data-theme="light"] .player-card .card-title {
+    color: var(--text-primary, #0f172a);
+}
+
+[data-theme="light"] .player-card .text-muted {
+    color: var(--text-muted, #94a3b8) !important;
+}
+
+@media (prefers-color-scheme: light) {
+    :root:not([data-theme]) .player-card .card-title {
+        color: var(--text-primary, #0f172a);
+    }
+    :root:not([data-theme]) .player-card .text-muted {
+        color: var(--text-muted, #94a3b8) !important;
+    }
 }
 
 /* 반응형 폰트 크기 */
@@ -20,7 +48,7 @@
 
 @media (min-width: 1200px) {
     .player-card .card-title {
-        font-size: 1.1rem !important;
+        font-size: 1rem !important;
     }
 }
 
@@ -75,17 +103,17 @@
     border: 1px solid #4e2d91;
 }
 
-/* 선택된 플레이어 카드 스타일 */
+/* 선택된 플레이어 카드 스타일 - Dark Mode */
 .player-card.selected-first {
-    background: #d4edda !important;
-    border: 2px solid #28a745 !important;
-    box-shadow: 0 0 10px rgba(40, 167, 69, 0.3) !important;
+    background: rgba(16, 185, 129, 0.1) !important;
+    border: 2px solid #10b981 !important;
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.3) !important;
 }
 
 .player-card.selected-second {
-    background: #f8d7da !important;
-    border: 2px solid #dc3545 !important;
-    box-shadow: 0 0 10px rgba(220, 53, 69, 0.3) !important;
+    background: rgba(239, 68, 68, 0.1) !important;
+    border: 2px solid #ef4444 !important;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.3) !important;
 }
 
 /* 티어 배지 스타일 */
