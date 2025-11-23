@@ -5,6 +5,7 @@ import { renderOverviewStats, renderStatsTable, renderPlayersList, renderCharts,
 import { handlePlayerClick, clearPlayerSelection, getSelectedPlayers, setGameRecords, setGameData, renderRivalChart, renderTeammateChart } from './modules/playerManager.js';
 import { initializeWinRateSystem, updateWinRateDisplay } from './modules/winRateDisplay.js';
 import { initializePlayerPicker } from './modules/playerPicker.js';
+import { setGameDataForTeamBuilder } from './modules/teamBuilder.js';
 
 // 전역 변수
 let gameData = null;
@@ -41,6 +42,9 @@ async function initializeApp() {
         setGameData(gameData);
         setGameRecords(gameRecords);
 
+        // teamBuilder에 데이터 설정
+        setGameDataForTeamBuilder(gameData);
+
         // UI 업데이트
         hideLoading();
         renderOverviewStats(gameData);
@@ -74,6 +78,9 @@ async function refreshData() {
         // playerManager에 데이터 설정
         setGameData(gameData);
         setGameRecords(gameRecords);
+
+        // teamBuilder에 데이터 설정
+        setGameDataForTeamBuilder(gameData);
 
         // UI 업데이트
         hideLoading();

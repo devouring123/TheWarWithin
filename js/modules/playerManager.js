@@ -386,6 +386,9 @@ function renderAllPlayerComparison(selectedPlayerName) {
     console.log("Top teammates:", topTeammates);
     console.log("Bottom teammates:", bottomTeammates);
 
+    // 포지션별 배지 가져오기
+    const positionBadges = getSynergyBadgeHtml(selectedPlayerName, selectedPlayerName, true);
+
     // HTML 생성
     let html = `
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -398,6 +401,7 @@ function renderAllPlayerComparison(selectedPlayerName) {
                 </span>
             </span>
         </div>
+        ${positionBadges ? `<div class="mb-3 text-center">${positionBadges}</div>` : ''}
     `;
 
     // 최근 5경기 표시
@@ -990,18 +994,110 @@ export function calculateSynergy(player1Name, player2Name) {
 }
 
 // 상성 배지 HTML 생성
-export function getSynergyBadgeHtml(player1Name, player2Name) {
+export function getSynergyBadgeHtml(player1Name, player2Name, isSinglePlayer = false) {
     const synergy = calculateSynergy(player1Name, player2Name);
     const badges = [];
 
-    // 듀오 배지: 같은 팀 승률 75% 이상, 최소 4경기 이상
-    if (synergy.sameTeamGames >= 4 && synergy.sameTeamWinRate >= 75) {
-        badges.push(`<span class="synergy-badge duo"><i class="fas fa-bolt me-1"></i>영혼의 듀오</span>`);
+    // 플레이어 개인 승률 가져오기
+    const player1 = gameData?.players?.find(p => p.name.toLowerCase() === player1Name.toLowerCase());
+    const player2 = gameData?.players?.find(p => p.name.toLowerCase() === player2Name.toLowerCase());
+    const p1WinRate = player1?.winRate || 0;
+    const p2WinRate = player2?.winRate || 0;
+
+    // 1인 선택 시 포지션 태그만 표시
+    if (isSinglePlayer) {
+        return getPositionBadgesHtml(player1, player1Name);
     }
 
-    // 천적 배지: 상대 팀 승률 25% 미만, 최소 4경기 이상
-    if (synergy.vsGames >= 4 && synergy.vsWinRate <= 25) {
-        badges.push(`<span class="synergy-badge nemesis"><i class="fas fa-skull me-1"></i>천적 관계</span>`);
+    // 전체 게임 수 계산
+    const totalGames = synergy.sameTeamGames + synergy.vsGames;
+    const sameTeamRatio = totalGames > 0 ? (synergy.sameTeamGames / totalGames) * 100 : 0;
+    const vsRatio = totalGames > 0 ? (synergy.vsGames / totalGames) * 100 : 0;
+
+    // === 같은 팀 관련 태그 ===
+
+    // 영혼의 듀오: 같은 팀 승률 65% 이상, 최소 5경기 이상
+    if (synergy.sameTeamGames >= 5 && synergy.sameTeamWinRate >= 65) {
+        badges.push(`<span class="synergy-badge duo" title="같은 팀 승률 65% 이상 (${synergy.sameTeamGames}경기)"><i class="fas fa-bolt me-1"></i>영혼의 듀오</span>`);
+    }
+    // 합쳐서 3인분: 둘 다 개인 승률 50% 미만인데 뭉치면 65% 이상
+    else if (synergy.sameTeamGames >= 5 && p1WinRate < 50 && p2WinRate < 50 && synergy.sameTeamWinRate >= 65) {
+        badges.push(`<span class="synergy-badge synergy-boost" title="각자 승률 50% 미만이지만 뭉치면 65% 이상 (${synergy.sameTeamGames}경기)"><i class="fas fa-hand-holding-heart me-1"></i>합쳐서 3인분</span>`);
+    }
+    // 패트와 매트: 같은 팀 승률 35% 이하, 최소 5경기 이상
+    else if (synergy.sameTeamGames >= 5 && synergy.sameTeamWinRate <= 35) {
+        badges.push(`<span class="synergy-badge bad-duo" title="같은 팀 승률 35% 이하 (${synergy.sameTeamGames}경기)"><i class="fas fa-tools me-1"></i>패트와 매트</span>`);
+    }
+    // 억제기 듀오: 둘 다 개인 승률 50% 이상인데 뭉치면 35% 미만
+    else if (synergy.sameTeamGames >= 5 && p1WinRate >= 50 && p2WinRate >= 50 && synergy.sameTeamWinRate < 35) {
+        badges.push(`<span class="synergy-badge inhibitor" title="각자 승률 50% 이상이지만 뭉치면 35% 미만 (${synergy.sameTeamGames}경기)"><i class="fas fa-unlink me-1"></i>억제기 듀오</span>`);
+    }
+
+    // === 상대 팀 관련 태그 ===
+
+    // 천적 배지: 상대 팀 승률 35% 이하, 최소 5경기 이상
+    if (synergy.vsGames >= 5 && synergy.vsWinRate <= 35) {
+        badges.push(`<span class="synergy-badge nemesis" title="상대 시 승률 35% 이하 (${synergy.vsGames}경기)"><i class="fas fa-skull me-1"></i>천적 관계</span>`);
+    }
+    // 먹잇감: 상대 팀 승률 65% 이상, 최소 5경기 이상
+    else if (synergy.vsGames >= 5 && synergy.vsWinRate >= 65) {
+        badges.push(`<span class="synergy-badge prey" title="상대 시 승률 65% 이상 (${synergy.vsGames}경기)"><i class="fas fa-crosshairs me-1"></i>먹잇감</span>`);
+    }
+    // 자강두천: 상대 팀 승률 45% ~ 55% 사이, 최소 5경기 이상
+    else if (synergy.vsGames >= 5 && synergy.vsWinRate >= 45 && synergy.vsWinRate <= 55) {
+        badges.push(`<span class="synergy-badge rival" title="상대 시 승률 45%~55% (${synergy.vsGames}경기)"><i class="fas fa-balance-scale me-1"></i>자강두천</span>`);
+    }
+
+    // === 매칭 빈도 관련 태그 ===
+
+    // 깐부: 전체 게임 중 같은 팀 비율 65% 이상
+    if (totalGames >= 5 && sameTeamRatio >= 65) {
+        badges.push(`<span class="synergy-badge one-plus-one" title="전체 ${totalGames}경기 중 같은 팀 ${sameTeamRatio.toFixed(0)}%"><i class="fas fa-handshake me-1"></i>깐부</span>`);
+    }
+
+    // 질긴 인연: 전체 게임 중 적으로 만난 비율 65% 이상
+    if (totalGames >= 5 && vsRatio >= 65) {
+        badges.push(`<span class="synergy-badge long-rivalry" title="전체 ${totalGames}경기 중 적팀 ${vsRatio.toFixed(0)}%"><i class="fas fa-link me-1"></i>질긴 인연</span>`);
+    }
+
+    return badges.join('');
+}
+
+// 포지션별 배지 HTML 생성 (1인 선택용)
+function getPositionBadgesHtml(player, playerName) {
+    const badges = [];
+
+    const positionTags = {
+        top: { high: '제우스', low: '망나니' },
+        jungle: { high: '오너', low: 'ㅈㄱㅊㅇ' },
+        mid: { high: '페이커', low: '미드 오픈' },
+        adc: { high: '구마유시', low: '숟가락' },
+        support: { high: '케리아', low: '"도구"' }
+    };
+
+    const positionIcons = {
+        top: 'fa-shield-alt',
+        jungle: 'fa-tree',
+        mid: 'fa-hat-wizard',
+        adc: 'fa-crosshairs',
+        support: 'fa-hands-helping'
+    };
+
+    if (player?.positions) {
+        Object.entries(player.positions).forEach(([pos, data]) => {
+            const games = (data.wins || 0) + (data.losses || 0);
+            if (games >= 5) {
+                const winRate = games > 0 ? (data.wins / games) * 100 : 0;
+                const posTag = positionTags[pos];
+                const icon = positionIcons[pos] || 'fa-gamepad';
+
+                if (posTag && winRate >= 65) {
+                    badges.push(`<span class="synergy-badge position-high" title="${playerName} ${pos} 승률 ${winRate.toFixed(0)}% (${games}경기)"><i class="fas ${icon} me-1"></i>${posTag.high}</span>`);
+                } else if (posTag && winRate <= 35) {
+                    badges.push(`<span class="synergy-badge position-low" title="${playerName} ${pos} 승률 ${winRate.toFixed(0)}% (${games}경기)"><i class="fas ${icon} me-1"></i>${posTag.low}</span>`);
+                }
+            }
+        });
     }
 
     return badges.join('');

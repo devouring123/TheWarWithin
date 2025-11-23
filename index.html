@@ -595,6 +595,14 @@
             font-weight: 600;
         }
 
+        .position-tag-mini {
+            font-size: 0.65rem !important;
+            padding: 2px 5px !important;
+            margin: 0 3px !important;
+            border-radius: 8px !important;
+            vertical-align: middle;
+        }
+
         /* 라인 배치 제목 다크모드 */
         .position-slots-title {
             color: var(--text-primary);
@@ -927,6 +935,116 @@
             background: linear-gradient(135deg, #8b0000, #dc143c);
             color: #fff;
             box-shadow: 0 2px 8px rgba(220, 20, 60, 0.4);
+        }
+
+        .synergy-badge.bad-duo {
+            background: linear-gradient(135deg, #4a5568, #718096);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(113, 128, 150, 0.4);
+        }
+
+        .synergy-badge.prey {
+            background: linear-gradient(135deg, #10b981, #34d399);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+        }
+
+        .synergy-badge.rival {
+            background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+        }
+
+        .synergy-badge.synergy-boost {
+            background: linear-gradient(135deg, #f472b6, #ec4899);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(236, 72, 153, 0.4);
+        }
+
+        .synergy-badge.inhibitor {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+        }
+
+        .synergy-badge.one-plus-one {
+            background: linear-gradient(135deg, #06b6d4, #0891b2);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(6, 182, 212, 0.4);
+        }
+
+        .synergy-badge.long-rivalry {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+        }
+
+        .synergy-badge.position-high {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #000;
+            box-shadow: 0 2px 8px rgba(251, 191, 36, 0.4);
+        }
+
+        .synergy-badge.position-low {
+            background: linear-gradient(135deg, #64748b, #475569);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(100, 116, 139, 0.4);
+        }
+
+        /* 배지 툴팁 스타일 */
+        .synergy-badge {
+            cursor: pointer;
+            position: relative;
+        }
+
+        .synergy-badge:hover {
+            transform: scale(1.05);
+            transition: transform 0.2s ease;
+        }
+
+        .synergy-badge::after {
+            content: attr(title);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-primary, #0a0a0b);
+            color: var(--text-primary, #fafafa);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 400;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-subtle, rgba(255,255,255,0.1));
+            margin-bottom: 8px;
+            pointer-events: none;
+        }
+
+        .synergy-badge::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: var(--bg-primary, #0a0a0b);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            z-index: 1001;
+            margin-bottom: 2px;
+            pointer-events: none;
+        }
+
+        .synergy-badge:hover::after,
+        .synergy-badge:hover::before {
+            opacity: 1;
+            visibility: visible;
         }
 
         /* 매치 히스토리 스타일 - Dark Mode */

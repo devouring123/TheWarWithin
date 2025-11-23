@@ -1,7 +1,16 @@
 // 팀 생성 및 관리 모듈 (대기석 + 순차적 포지션 배정)
 
+// 게임 데이터 저장
+let gameDataForTeamBuilder = null;
+
+// 게임 데이터 설정
+export function setGameDataForTeamBuilder(data) {
+    gameDataForTeamBuilder = data;
+}
+
 // 포지션 정보
 const POSITIONS = ['탑', '정글', '미드', '원딜', '서폿'];
+const POSITION_KEYS = ['top', 'jungle', 'mid', 'adc', 'support'];
 
 // 현재 팀 상태
 let currentTeams = {
@@ -218,6 +227,54 @@ function renderWaitingPlayers(teamId, players) {
     });
 }
 
+// 플레이어의 해당 포지션 태그 가져오기
+function getPositionTagForPlayer(playerName, positionIndex) {
+    if (!gameDataForTeamBuilder || !gameDataForTeamBuilder.players) return '';
+
+    const player = gameDataForTeamBuilder.players.find(p =>
+        p.name.toLowerCase() === playerName.toLowerCase()
+    );
+    if (!player || !player.positions) return '';
+
+    const positionKey = POSITION_KEYS[positionIndex];
+    const posData = player.positions[positionKey];
+    if (!posData) return '';
+
+    const games = (posData.wins || 0) + (posData.losses || 0);
+    if (games < 5) return '';
+
+    const winRate = games > 0 ? (posData.wins / games) * 100 : 0;
+
+    const positionTags = {
+        top: { high: '제우스', low: '망나니' },
+        jungle: { high: '오너', low: 'ㅈㄱㅊㅇ' },
+        mid: { high: '페이커', low: '미드 오픈' },
+        adc: { high: '구마유시', low: '숟가락' },
+        support: { high: '케리아', low: '"도구"' }
+    };
+
+    const tag = positionTags[positionKey];
+    const positionName = POSITIONS[positionIndex];
+
+    const tooltips = {
+        top: { high: '탑 승률 65% 이상', low: '탑 승률 35% 이하' },
+        jungle: { high: '정글 승률 65% 이상', low: '정글 승률 35% 이하' },
+        mid: { high: '미드 승률 65% 이상', low: '미드 승률 35% 이하' },
+        adc: { high: '원딜 승률 65% 이상', low: '원딜 승률 35% 이하' },
+        support: { high: '서폿 승률 65% 이상', low: '서폿 승률 35% 이하' }
+    };
+
+    if (tag && winRate >= 65) {
+        const tooltip = tooltips[positionKey].high;
+        return `<span class="synergy-badge position-high position-tag-mini" title="${tooltip}">${tag.high}</span>`;
+    } else if (tag && winRate <= 35) {
+        const tooltip = tooltips[positionKey].low;
+        return `<span class="synergy-badge position-low position-tag-mini" title="${tooltip}">${tag.low}</span>`;
+    }
+
+    return '';
+}
+
 // 포지션 슬롯들 렌더링
 function renderPositionSlots() {
     renderTeamPositions('team1');
@@ -241,7 +298,16 @@ function renderTeamPositions(teamId) {
         slot.classList.remove('dragging', 'drag-over');
         
         if (assignedPlayer) {
-            playerNameSpan.textContent = assignedPlayer;
+            // 포지션 태그 계산
+            const positionTag = getPositionTagForPlayer(assignedPlayer, index);
+
+            // 팀에 따라 태그 위치 결정 (팀1은 왼쪽, 팀2는 오른쪽)
+            if (teamId === 'team1') {
+                playerNameSpan.innerHTML = positionTag ? `<span class="position-tag-mini">${positionTag}</span>${assignedPlayer}` : assignedPlayer;
+            } else {
+                playerNameSpan.innerHTML = positionTag ? `${assignedPlayer}<span class="position-tag-mini">${positionTag}</span>` : assignedPlayer;
+            }
+
             slot.classList.add('filled');
             slot.classList.remove('next-to-fill');
         } else {
