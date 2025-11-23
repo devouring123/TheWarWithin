@@ -18,26 +18,19 @@
 
 1. [Google Apps Script](https://script.google.com/home) 접속
 2. 새 프로젝트 생성
-3. [googleAppScript.js](googleAppScript.js) 내용 붙여넣고 `YOUR_SHEET_ID` 부분을 내 시트 ID로 교체
+3. [googleAppScript.js](googleAppScript.js) 내용 붙여넣고 `YOUR_SPREADSHEET_ID` 부분을 내 시트 ID로 교체
 4. 배포 > 새 배포 클릭
+   - 유형 선택 = 웹 앱
    - 다음 사용자 인증 정보로 실행 = "나"
    - 액세스 권한이 있는 사용자 = "모든 사용자"
-5. 배포 후 웹 앱 URL 복사
+5. 액세스 승인 버튼 누르기
+6. 계정 선택 -> Advanced -> Go to [YOUR PROJECT] (unsafe) -> Continue
+7. 배포 완료 후 배포 ID 복사
 
-### 3. 애플리케이션 설정
-
-#### 방법 1: URL 파라미터 사용 (권장)
-```
-index.html?spreadsheetId=YOUR_SPREADSHEET_ID&scriptUrl=YOUR_SCRIPT_URL
-```
-
-#### 방법 2: 설정 폼 입력
-- 애플리케이션 실행 시 자동으로 표시되는 설정 폼에 정보 입력
-- 설정은 로컬 스토리지에 저장되어 재사용
-
-### 4. 실행 방법
+### 3. 실행 방법
 
 #### 로컬 서버 실행
+저장소 클론 후 해당 폴더에서 cmd 실행
 ```bash
 # Python 3
 python -m http.server 8000
@@ -52,6 +45,17 @@ npx http-server
 2. Settings > Pages > Source를 `main` 브랜치로 설정
 3. `https://[username].github.io/[repository-name]` 접속
 4. URL 파라미터로 설정 전달: `?spreadsheetId=...&scriptUrl=...`
+
+### 4. 애플리케이션 설정
+
+#### 방법 1: URL 파라미터 사용 (권장)
+```
+http://localhost:8000/?spreadsheetId=YOUR_SPREADSHEET_ID&scriptUrl=YOUR_SCRIPT_URL
+```
+
+#### 방법 2: 설정 폼 입력
+- 애플리케이션 실행 시 자동으로 표시되는 설정 폼에 정보 입력
+- 설정은 로컬 스토리지에 저장되어 재사용
 
 ## 주요 기능
 
