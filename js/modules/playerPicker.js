@@ -106,7 +106,7 @@ function addPlayerToInput(playerName) {
 }
 
 // 선택된 플레이어 상태 업데이트
-function updatePlayerSelectionState() {
+export function updatePlayerSelectionState() {
     const playersInput = document.getElementById('playersInput');
     if (!playersInput) return;
 

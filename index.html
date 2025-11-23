@@ -529,9 +529,28 @@
             border-color: var(--border-default);
         }
 
+        .position-slot:hover .player-name {
+            color: var(--text-primary);
+        }
+
+        /* 선택된 플레이어 버튼 텍스트는 항상 흰색 */
+        .player-select-btn.selected,
+        .player-select-btn.selected:hover {
+            color: white !important;
+        }
+
         .position-slot.filled {
             border-color: var(--accent-green);
             background: rgba(16, 185, 129, 0.1);
+        }
+
+        .position-slot.filled:hover {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: var(--accent-green);
+        }
+
+        .position-slot.filled:hover .player-name {
+            color: var(--accent-green);
         }
 
         .position-slot.next-to-fill {
@@ -733,6 +752,7 @@
             background: var(--bg-elevated);
             border-color: var(--accent-primary);
             transform: translateY(-2px);
+            color: var(--text-primary);
         }
 
         /* 선택된 플레이어 버튼 스타일 */

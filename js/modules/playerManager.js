@@ -88,7 +88,7 @@ export function clearPlayerSelection() {
     selectedPlayers.forEach(playerName => {
         const card = document.getElementById(`player-card-${playerName}`);
         if (card) {
-            card.classList.remove('selected');
+            card.classList.remove('selected', 'selected-first', 'selected-second');
         }
     });
     selectedPlayers = [];
