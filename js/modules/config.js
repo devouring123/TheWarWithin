@@ -1,8 +1,8 @@
 // Google Sheets 설정을 window 객체에 저장
 window.CONFIG = window.CONFIG || {
     SPREADSHEET_ID: '',
-    SHEET_GID: '2129803798', // 승률표 시트의 GID
-    RECORDS_SHEET_GID: '339777748', // 기록 시트의 GID
+    SHEET_GID: '', // 승률표 시트의 GID
+    RECORDS_SHEET_GID: '', // 기록 시트의 GID
     SHEET_NAME: '승률표',
     RECORDS_SHEET_NAME: '기록', // 기록 시트 이름
     // Google Apps Script 웹 앱 URL (배포 후 받은 URL로 교체)

@@ -20,12 +20,16 @@ function getStoredConfig() {
     try {
         const storedSpreadsheetId = localStorage.getItem('spreadsheetId');
         const storedScriptId = localStorage.getItem('scriptId');
+        const storedSheetGid = localStorage.getItem('sheetGid');
+        const storedRecordsGid = localStorage.getItem('recordsGid');
 
         // 모든 설정 값이 있어야 함
-        if (storedSpreadsheetId && storedScriptId) {
+        if (storedSpreadsheetId && storedScriptId && storedSheetGid && storedRecordsGid) {
             return {
                 spreadsheetId: storedSpreadsheetId,
-                scriptId: storedScriptId
+                scriptId: storedScriptId,
+                sheetGid: storedSheetGid,
+                recordsGid: storedRecordsGid
             };
         }
         return null;
@@ -36,10 +40,12 @@ function getStoredConfig() {
 }
 
 // 로컬 스토리지에 설정 저장
-function storeConfig(spreadsheetId, scriptId) {
+function storeConfig(spreadsheetId, scriptId, sheetGid, recordsGid) {
     try {
         localStorage.setItem('spreadsheetId', spreadsheetId);
         localStorage.setItem('scriptId', scriptId);
+        if (sheetGid) localStorage.setItem('sheetGid', sheetGid);
+        if (recordsGid) localStorage.setItem('recordsGid', recordsGid);
     } catch (error) {
         console.warn('로컬 스토리지에 설정을 저장하는 중 오류 발생:', error);
     }
@@ -47,21 +53,10 @@ function storeConfig(spreadsheetId, scriptId) {
 
 // 설정 입력 폼 표시 (실제 설정 사용)
 function showConfigForm() {
-    return new Promise((resolve) => {
+    return new Promise(async (resolve, reject) => {
         // URL에서 쿼리 파라미터 가져오기
         const queryParams = getQueryParams();
         if (queryParams.spreadsheetId && queryParams.scriptId) {
-            // 쿼리 파라미터가 모두 있으면 바로 사용
-            updateConfig({
-                SPREADSHEET_ID: queryParams.spreadsheetId
-            });
-
-            // Google Apps Script URL 업데이트
-            updateScriptURL(queryParams.scriptId);
-
-            // 로컬 스토리지에 설정 저장
-            storeConfig(queryParams.spreadsheetId, queryParams.scriptId);
-
             // 로딩 화면 표시
             const loadingEl = document.getElementById('loading');
             loadingEl.style.display = 'flex';
@@ -70,72 +65,186 @@ function showConfigForm() {
                     <div class="spinner-border text-light mb-3" role="status">
                         <span class="visually-hidden">Loading...</span>
                     </div>
-                    <p class="text-light">URL 파라미터로 설정된 데이터를 불러오는 중...</p>
+                    <p class="text-light">시트 정보를 가져오는 중...</p>
                 </div>
             `;
 
-            resolve();
+            try {
+                // Google Apps Script URL 생성
+                const scriptUrl = `https://script.google.com/macros/s/${queryParams.scriptId}/exec`;
+
+                // GET 요청으로 GID 자동 가져오기
+                const response = await fetch(scriptUrl);
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'GID를 가져오는데 실패했습니다.');
+                }
+
+                if (!data.sheetGid || !data.recordsGid) {
+                    throw new Error('승률표 또는 기록 시트를 찾을 수 없습니다.');
+                }
+
+                const sheetGid = String(data.sheetGid);
+                const recordsGid = String(data.recordsGid);
+
+                // 설정 업데이트
+                updateConfig({
+                    SPREADSHEET_ID: queryParams.spreadsheetId,
+                    SHEET_GID: sheetGid,
+                    RECORDS_SHEET_GID: recordsGid
+                });
+
+                // Google Apps Script URL 업데이트
+                updateScriptURL(queryParams.scriptId);
+
+                // 로컬 스토리지에 설정 저장
+                storeConfig(queryParams.spreadsheetId, queryParams.scriptId, sheetGid, recordsGid);
+
+                loadingEl.innerHTML = `
+                    <div class="text-center">
+                        <div class="spinner-border text-light mb-3" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="text-light">URL 파라미터로 설정된 데이터를 불러오는 중...</p>
+                    </div>
+                `;
+
+                resolve();
+
+            } catch (error) {
+                console.error('URL 파라미터 GID 가져오기 실패:', error);
+                reject(error);
+            }
             return;
         }
 
         // 로컬 스토리지에서 저장된 설정 확인
         const storedConfig = getStoredConfig();
         if (storedConfig && storedConfig.spreadsheetId && storedConfig.scriptId) {
-            // 저장된 설정이 모두 있으면 바로 사용
-            updateConfig({
-                SPREADSHEET_ID: storedConfig.spreadsheetId
-            });
-
-            // Google Apps Script URL 업데이트
-            updateScriptURL(storedConfig.scriptId);
-
             // 로딩 화면 표시
             const loadingEl = document.getElementById('loading');
             loadingEl.style.display = 'flex';
+
+            // GID가 있으면 바로 사용, 없으면 자동으로 가져오기
+            if (storedConfig.sheetGid && storedConfig.recordsGid) {
+                // 저장된 설정이 모두 있으면 바로 사용
+                updateConfig({
+                    SPREADSHEET_ID: storedConfig.spreadsheetId,
+                    SHEET_GID: storedConfig.sheetGid,
+                    RECORDS_SHEET_GID: storedConfig.recordsGid
+                });
+
+                // Google Apps Script URL 업데이트
+                updateScriptURL(storedConfig.scriptId);
+
+                loadingEl.innerHTML = `
+                    <div class="text-center">
+                        <div class="spinner-border text-light mb-3" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="text-light">저장된 설정으로 데이터를 불러오는 중...</p>
+                    </div>
+                `;
+
+                resolve();
+                return;
+            }
+
+            // GID가 없으면 자동으로 가져오기
             loadingEl.innerHTML = `
                 <div class="text-center">
                     <div class="spinner-border text-light mb-3" role="status">
                         <span class="visually-hidden">Loading...</span>
                     </div>
-                    <p class="text-light">저장된 설정으로 데이터를 불러오는 중...</p>
+                    <p class="text-light">시트 정보를 가져오는 중...</p>
                 </div>
             `;
 
-            resolve();
-            return;
+            try {
+                // Google Apps Script URL 생성
+                const scriptUrl = `https://script.google.com/macros/s/${storedConfig.scriptId}/exec`;
+
+                // GET 요청으로 GID 자동 가져오기
+                const response = await fetch(scriptUrl);
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'GID를 가져오는데 실패했습니다.');
+                }
+
+                if (!data.sheetGid || !data.recordsGid) {
+                    throw new Error('승률표 또는 기록 시트를 찾을 수 없습니다.');
+                }
+
+                const sheetGid = String(data.sheetGid);
+                const recordsGid = String(data.recordsGid);
+
+                // 설정 업데이트
+                updateConfig({
+                    SPREADSHEET_ID: storedConfig.spreadsheetId,
+                    SHEET_GID: sheetGid,
+                    RECORDS_SHEET_GID: recordsGid
+                });
+
+                // Google Apps Script URL 업데이트
+                updateScriptURL(storedConfig.scriptId);
+
+                // 로컬 스토리지에 GID 포함하여 다시 저장
+                storeConfig(storedConfig.spreadsheetId, storedConfig.scriptId, sheetGid, recordsGid);
+
+                loadingEl.innerHTML = `
+                    <div class="text-center">
+                        <div class="spinner-border text-light mb-3" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="text-light">저장된 설정으로 데이터를 불러오는 중...</p>
+                    </div>
+                `;
+
+                resolve();
+
+            } catch (error) {
+                console.error('저장된 설정 GID 가져오기 실패:', error);
+                // GID 가져오기 실패 시 설정 폼 표시를 위해 localStorage 클리어
+                localStorage.removeItem('sheetGid');
+                localStorage.removeItem('recordsGid');
+                // 폼 표시로 진행 (아래 코드로 넘어감)
+            }
         }
 
         // 저장된 설정이 없거나 불완전하면 입력 폼 표시
         // 기존 로딩 화면 숨기기
         document.getElementById('loading').style.display = 'none';
 
-        // 설정 입력 폼 생성
+        // 설정 입력 폼 생성 - 다크모드 지원
         const configFormHTML = `
-            <div class="card text-center" style="max-width: 700px; margin: 0 auto;">
-                <div class="card-body">
-                    <h5 class="card-title">Google Sheets 설정</h5>
-                    <p class="card-text">데이터를 불러오기 위해 아래 정보를 입력해주세요.</p>
-                    
+            <div class="card text-center" style="max-width: 700px; margin: 0 auto; background: var(--bg-secondary, #ffffff); border: 1px solid var(--border-subtle, rgba(0,0,0,0.1));">
+                <div class="card-body" style="color: var(--text-primary, #212529);">
+                    <h5 class="card-title" style="color: var(--text-primary, #212529);">Google Sheets 설정</h5>
+                    <p class="card-text" style="color: var(--text-secondary, #6c757d);">데이터를 불러오기 위해 아래 정보를 입력해주세요.</p>
+
                     <div class="mb-3 text-start">
-                        <label for="spreadsheetId" class="form-label">스프레드시트 ID</label>
-                        <input type="text" class="form-control" id="spreadsheetId" placeholder="">
+                        <label for="spreadsheetId" class="form-label" style="color: var(--text-primary, #212529);">스프레드시트 ID</label>
+                        <input type="text" class="form-control" id="spreadsheetId" placeholder="" style="background: var(--bg-tertiary, #f8f9fa); border-color: var(--border-default, #ced4da); color: var(--text-primary, #212529);">
                     </div>
-                    
+
                     <div class="mb-3 text-start">
-                        <label for="scriptId" class="form-label">Google Apps Script ID</label>
-                        <input type="text" class="form-control" id="scriptId" placeholder="">
-                        <div class="form-text">https://script.google.com/macros/s/ 이후의 ID 부분만 입력하세요</div>
+                        <label for="scriptId" class="form-label" style="color: var(--text-primary, #212529);">Google Apps Script ID</label>
+                        <input type="text" class="form-control" id="scriptId" placeholder="" style="background: var(--bg-tertiary, #f8f9fa); border-color: var(--border-default, #ced4da); color: var(--text-primary, #212529);">
+                        <div class="form-text" style="color: var(--text-muted, #6c757d);">https://script.google.com/macros/s/ 이후의 ID 부분만 입력하세요</div>
                     </div>
-                    
-                    <div class="alert alert-info" role="alert">
-                        <h6 class="alert-heading">안내</h6>
-                        <ul class="mb-0">
+
+                    <div class="alert" role="alert" style="background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.3); color: var(--text-primary, #212529);">
+                        <h6 class="alert-heading text-center" style="color: var(--accent-cyan, #06b6d4);">안내</h6>
+                        <ul class="mb-0 text-start" style="color: var(--text-secondary, #6c757d);">
                             <li>입력된 정보는 실제 사용됩니다</li>
                             <li>스프레드시트는 공개 설정이어야 합니다</li>
+                            <li>시트 GID는 자동으로 가져옵니다</li>
                             <li>입력한 정보는 브라우저에 저장되며 다음 로그인 시 자동으로 사용됩니다</li>
                         </ul>
                     </div>
-                    
+
                     <div class="d-grid gap-2">
                         <button class="btn btn-primary" id="continueBtn">계속</button>
                     </div>
@@ -148,44 +257,88 @@ function showConfigForm() {
         loadingEl.innerHTML = configFormHTML;
 
         // 계속 버튼 이벤트 리스너
-        document.getElementById('continueBtn').addEventListener('click', function () {
+        document.getElementById('continueBtn').addEventListener('click', async function () {
             // 입력된 정보를 실제로 사용
             const spreadsheetId = document.getElementById('spreadsheetId').value.trim();
             const scriptId = document.getElementById('scriptId').value.trim();
 
-            // 모든 필드가 입력되었는지 확인
+            // 필수 필드가 입력되었는지 확인
             if (!spreadsheetId || !scriptId) {
-                alert('모든 필드를 입력해주세요.');
+                alert('스프레드시트 ID와 Script ID를 입력해주세요.');
                 return;
             }
 
-            // 설정 업데이트
-            updateConfig({
-                SPREADSHEET_ID: spreadsheetId
-            });
-
-            // Google Apps Script URL 업데이트
-            updateScriptURL(scriptId);
-
-            // 로컬 스토리지에 설정 저장
-            storeConfig(spreadsheetId, scriptId);
-
-            // 업데이트된 설정 값 출력
-            console.log('설정 업데이트 완료:', {
-                spreadsheetId: spreadsheetId,
-                scriptId: scriptId
-            });
-
+            // 로딩 표시
             loadingEl.innerHTML = `
                 <div class="text-center">
                     <div class="spinner-border text-light mb-3" role="status">
                         <span class="visually-hidden">Loading...</span>
                     </div>
-                    <p class="text-light">설정을 확인하고 데이터를 불러오는 중...</p>
+                    <p class="text-light">시트 정보를 가져오는 중...</p>
                 </div>
             `;
 
-            resolve();
+            try {
+                // Google Apps Script URL 생성
+                const scriptUrl = `https://script.google.com/macros/s/${scriptId}/exec`;
+
+                // GET 요청으로 GID 자동 가져오기
+                const response = await fetch(scriptUrl);
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'GID를 가져오는데 실패했습니다.');
+                }
+
+                if (!data.sheetGid || !data.recordsGid) {
+                    throw new Error('승률표 또는 기록 시트를 찾을 수 없습니다. 시트 이름을 확인해주세요.');
+                }
+
+                const sheetGid = String(data.sheetGid);
+                const recordsGid = String(data.recordsGid);
+
+                // 설정 업데이트
+                updateConfig({
+                    SPREADSHEET_ID: spreadsheetId,
+                    SHEET_GID: sheetGid,
+                    RECORDS_SHEET_GID: recordsGid
+                });
+
+                // Google Apps Script URL 업데이트
+                updateScriptURL(scriptId);
+
+                // 로컬 스토리지에 설정 저장
+                storeConfig(spreadsheetId, scriptId, sheetGid, recordsGid);
+
+                // 업데이트된 설정 값 출력
+                console.log('설정 업데이트 완료:', {
+                    spreadsheetId: spreadsheetId,
+                    scriptId: scriptId,
+                    sheetGid: sheetGid,
+                    recordsGid: recordsGid
+                });
+
+                loadingEl.innerHTML = `
+                    <div class="text-center">
+                        <div class="spinner-border text-light mb-3" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="text-light">설정을 확인하고 데이터를 불러오는 중...</p>
+                    </div>
+                `;
+
+                resolve();
+
+            } catch (error) {
+                console.error('GID 가져오기 실패:', error);
+                alert('GID를 자동으로 가져오는데 실패했습니다: ' + error.message);
+
+                // 폼 다시 표시
+                loadingEl.innerHTML = configFormHTML;
+
+                // 이벤트 리스너 다시 등록을 위해 페이지 새로고침
+                location.reload();
+            }
         });
     });
 }
@@ -420,30 +573,35 @@ export function hideLoading() {
 export function showError(message) {
     const loadingEl = document.getElementById('loading');
     loadingEl.style.display = 'flex';
+
+    // 현재 설정된 스프레드시트 ID 가져오기
+    const currentConfig = getConfig();
+    const sheetId = currentConfig.SPREADSHEET_ID || 'YOUR_SHEET_ID';
+
     loadingEl.innerHTML = `
-        <div class="card text-center" style="max-width: 700px; margin: 0 auto;">
-            <div class="card-body">
+        <div class="card text-center" style="max-width: 700px; margin: 0 auto; background: var(--bg-secondary, #ffffff); border: 1px solid var(--border-subtle, rgba(0,0,0,0.1));">
+            <div class="card-body" style="color: var(--text-primary, #212529);">
                 <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
-                <h5 class="card-title">데이터를 불러올 수 없습니다</h5>
+                <h5 class="card-title" style="color: var(--text-primary, #212529);">데이터를 불러올 수 없습니다</h5>
                 <p class="card-text text-danger">${message}</p>
                 <div class="d-grid gap-2">
                     <button class="btn btn-primary" onclick="location.reload()">
                         <i class="fas fa-redo me-1"></i>다시 시도
                     </button>
-                    <hr>
+                    <hr style="border-color: var(--border-subtle, rgba(0,0,0,0.1));">
                     <div class="text-start small">
-                        <h6 class="text-primary mt-3">🔧 스프레드시트 공개 설정 방법:</h6>
-                        <ol class="mt-2">
+                        <h6 style="color: var(--accent-primary, #8b5cf6); margin-top: 1rem;">🔧 스프레드시트 공개 설정 방법:</h6>
+                        <ol class="mt-2" style="color: var(--text-secondary, #6c757d);">
                             <li><strong>Google Sheets</strong>에서 승률표 스프레드시트 열기</li>
                             <li>우측 상단 <span class="badge bg-success">공유</span> 버튼 클릭</li>
                             <li><strong>"링크가 있는 모든 사용자"</strong> 선택</li>
                             <li>권한을 <strong>"뷰어"</strong>로 설정</li>
                             <li><span class="badge bg-primary">완료</span> 버튼 클릭</li>
                         </ol>
-                        
-                        <div class="mt-3 p-2 bg-light rounded">
-                            <small><strong>💡 팁:</strong> 스프레드시트 URL: <br>
-                            <code class="small">https://docs.google.com/spreadsheets/d/1sJ7tQw3Ufy50Ih1DOEYxBtlCPNuZoGcd8serBRwbAkU/</code></small>
+
+                        <div class="mt-3 p-2 rounded" style="background: var(--bg-tertiary, #f8f9fa);">
+                            <small style="color: var(--text-secondary, #6c757d);"><strong>💡 팁:</strong> 스프레드시트 URL: <br>
+                            <code class="small" style="color: var(--accent-cyan, #06b6d4);">https://docs.google.com/spreadsheets/d/${sheetId}/</code></small>
                         </div>
                     </div>
                 </div>

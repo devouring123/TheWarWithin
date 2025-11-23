@@ -1,3 +1,9 @@
+// ============================================
+// 공통 설정 - 여기만 수정하면 됩니다
+// ============================================
+const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID';
+const RECORDS_SHEET_NAME = '기록';
+
 // Preflight OPTIONS 요청을 처리하기 위한 함수
 function doOptions(e) {
     return ContentService.createTextOutput('')
@@ -25,10 +31,6 @@ function doPost(e) {
         if (!Array.isArray(data.rows)) {
             throw new Error("'rows' 배열이 없습니다. 예: { \"rows\": [\"...\", \"...\"] }");
         }
-
-        // 스프레드시트 정보
-        const SPREADSHEET_ID = 'YOUR_SPEADSHEET_ID';
-        const RECORDS_SHEET_NAME = '기록';
 
         // 스프레드시트 및 시트 열기
         const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
@@ -104,16 +106,56 @@ function doPost(e) {
     }
 }
 
-// GET 요청 처리 (테스트용)
+// GET 요청 처리 - 시트 목록 및 GID 반환
 function doGet(e) {
-    const output = {
-        message: 'TheWarWithin Game Recorder is running!',
-        timestamp: new Date().toISOString()
-    };
+    try {
+        // 스프레드시트 열기
+        const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+        const sheets = spreadsheet.getSheets();
 
-    return ContentService
-        .createTextOutput(JSON.stringify(output))
-        .setMimeType(ContentService.MimeType.JSON);
+        // 시트 목록과 GID 추출
+        const sheetList = sheets.map(function(sheet) {
+            return {
+                name: sheet.getName(),
+                gid: sheet.getSheetId()
+            };
+        });
+
+        // 승률표와 기록 시트의 GID 찾기
+        let sheetGid = null;
+        let recordsGid = null;
+
+        sheetList.forEach(function(sheet) {
+            if (sheet.name === '승률표') {
+                sheetGid = sheet.gid;
+            } else if (sheet.name === '기록') {
+                recordsGid = sheet.gid;
+            }
+        });
+
+        const output = {
+            success: true,
+            message: 'TheWarWithin Game Recorder is running!',
+            timestamp: new Date().toISOString(),
+            sheets: sheetList,
+            sheetGid: sheetGid,
+            recordsGid: recordsGid
+        };
+
+        return ContentService
+            .createTextOutput(JSON.stringify(output))
+            .setMimeType(ContentService.MimeType.JSON);
+
+    } catch (error) {
+        console.error("doGet 오류:", error.toString());
+
+        return ContentService
+            .createTextOutput(JSON.stringify({
+                success: false,
+                error: "스크립트 오류: " + error.message
+            }))
+            .setMimeType(ContentService.MimeType.JSON);
+    }
 }
 
 // 테스트 함수
