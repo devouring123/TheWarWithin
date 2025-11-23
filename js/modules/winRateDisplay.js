@@ -351,14 +351,14 @@ export function triggerWinRateUpdate() {
     updateWinRateDisplay();
 }
 
-// 스타일 추가
+// 스타일 추가 - 다크/라이트 모드 지원
 const additionalStyles = `
 <style>
 .win-rate-comparison {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--bg-tertiary, rgba(255, 255, 255, 0.05));
     border-radius: 8px;
     padding: 15px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
 }
 
 .team-win-rate {
@@ -367,7 +367,7 @@ const additionalStyles = `
 
 .progress {
     border-radius: 4px;
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: var(--bg-tertiary, rgba(255, 255, 255, 0.1));
 }
 
 .progress-bar {
@@ -375,11 +375,24 @@ const additionalStyles = `
 }
 
 #winRateDisplay .card {
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background: var(--bg-secondary, #ffffff);
+    border: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.1));
+    box-shadow: var(--shadow-md, 0 2px 4px rgba(0, 0, 0, 0.1));
 }
 
 #winRateDisplay .card-header {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    background: var(--bg-tertiary, #f8f9fa);
+    border-bottom: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.1));
+    color: var(--text-primary, #212529);
+}
+
+#winRateDisplay .card-body {
+    background: var(--bg-secondary, #ffffff);
+    color: var(--text-primary, #212529);
+}
+
+#winRateDisplay .text-muted {
+    color: var(--text-muted, #6c757d) !important;
 }
 
 .badge {
@@ -396,7 +409,7 @@ const additionalStyles = `
 .vs-progress-bar {
     position: relative;
     height: 40px;
-    background: #e9ecef;
+    background: var(--bg-tertiary, #e9ecef);
     border-radius: 20px;
     overflow: hidden;
     display: flex;
@@ -430,6 +443,15 @@ const additionalStyles = `
 .team-labels {
     font-size: 1rem;
     font-weight: 600;
+    color: var(--text-primary, #212529);
+}
+
+.team-labels .text-primary {
+    color: #3b82f6 !important;
+}
+
+.team-labels .text-danger {
+    color: #ef4444 !important;
 }
 </style>
 `;

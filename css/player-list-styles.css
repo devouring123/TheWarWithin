@@ -1,14 +1,42 @@
-/* 플레이어 목록 스타일 개선 - Dark Mode */
+/* 플레이어 목록 스타일 개선 - Dark/Light Mode */
 .player-card .card-title {
     font-size: 1.1rem !important;
     font-weight: 600 !important;
     line-height: 1.2;
-    color: #fafafa;
+    color: var(--text-primary, #fafafa);
 }
 
 .player-card .card-title:hover {
-    color: #8b5cf6;
+    color: var(--accent-primary, #8b5cf6);
     transition: color 0.2s ease;
+}
+
+/* 플레이어 카드 내부 텍스트 다크/라이트 모드 지원 */
+.player-card .text-muted {
+    color: var(--text-muted, #6c757d) !important;
+}
+
+.player-card .positions small,
+.player-card .position-chart small {
+    color: var(--text-secondary, #a1a1aa) !important;
+}
+
+/* 라이트 모드 플레이어 카드 */
+[data-theme="light"] .player-card .card-title {
+    color: var(--text-primary, #0f172a);
+}
+
+[data-theme="light"] .player-card .text-muted {
+    color: var(--text-muted, #94a3b8) !important;
+}
+
+@media (prefers-color-scheme: light) {
+    :root:not([data-theme]) .player-card .card-title {
+        color: var(--text-primary, #0f172a);
+    }
+    :root:not([data-theme]) .player-card .text-muted {
+        color: var(--text-muted, #94a3b8) !important;
+    }
 }
 
 /* 반응형 폰트 크기 */

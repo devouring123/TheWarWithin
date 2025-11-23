@@ -12,7 +12,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/player-list-styles.css">
     <style>
-        :root {
+        /* 다크 모드 (기본) */
+        :root, [data-theme="dark"] {
             /* 배경 색상 */
             --bg-primary: #0a0a0b;
             --bg-secondary: #111113;
@@ -48,6 +49,80 @@
             --glow-primary: 0 0 20px rgba(139, 92, 246, 0.3);
             --glow-green: 0 0 20px rgba(16, 185, 129, 0.3);
             --glow-red: 0 0 20px rgba(239, 68, 68, 0.3);
+
+            /* 모드 전용 */
+            --btn-close-filter: invert(1);
+            --navbar-bg: rgba(10, 10, 11, 0.9);
+        }
+
+        /* 라이트 모드 */
+        [data-theme="light"] {
+            /* 배경 색상 */
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f1f5f9;
+            --bg-elevated: #ffffff;
+
+            /* 텍스트 색상 */
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+
+            /* 테두리 */
+            --border-subtle: rgba(0, 0, 0, 0.06);
+            --border-default: rgba(0, 0, 0, 0.1);
+            --border-strong: rgba(0, 0, 0, 0.15);
+
+            /* 그림자 */
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.15);
+            --shadow-xl: 0 20px 50px rgba(0, 0, 0, 0.2);
+
+            /* 글로우 */
+            --glow-primary: 0 0 20px rgba(139, 92, 246, 0.2);
+            --glow-green: 0 0 20px rgba(16, 185, 129, 0.2);
+            --glow-red: 0 0 20px rgba(239, 68, 68, 0.2);
+
+            /* 모드 전용 */
+            --btn-close-filter: none;
+            --navbar-bg: rgba(255, 255, 255, 0.9);
+        }
+
+        /* 시스템 설정 따라가기 */
+        @media (prefers-color-scheme: light) {
+            :root:not([data-theme]) {
+                /* 배경 색상 */
+                --bg-primary: #f8fafc;
+                --bg-secondary: #ffffff;
+                --bg-tertiary: #f1f5f9;
+                --bg-elevated: #ffffff;
+
+                /* 텍스트 색상 */
+                --text-primary: #0f172a;
+                --text-secondary: #475569;
+                --text-muted: #94a3b8;
+
+                /* 테두리 */
+                --border-subtle: rgba(0, 0, 0, 0.06);
+                --border-default: rgba(0, 0, 0, 0.1);
+                --border-strong: rgba(0, 0, 0, 0.15);
+
+                /* 그림자 */
+                --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+                --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+                --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.15);
+                --shadow-xl: 0 20px 50px rgba(0, 0, 0, 0.2);
+
+                /* 글로우 */
+                --glow-primary: 0 0 20px rgba(139, 92, 246, 0.2);
+                --glow-green: 0 0 20px rgba(16, 185, 129, 0.2);
+                --glow-red: 0 0 20px rgba(239, 68, 68, 0.2);
+
+                /* 모드 전용 */
+                --btn-close-filter: none;
+                --navbar-bg: rgba(255, 255, 255, 0.9);
+            }
         }
 
         * {
@@ -111,9 +186,9 @@
             padding: 1.25rem;
         }
 
-        /* Modern Navbar - Dark Mode */
+        /* Modern Navbar */
         .navbar {
-            background: rgba(10, 10, 11, 0.9) !important;
+            background: var(--navbar-bg) !important;
             backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border-subtle);
             padding: 0.75rem 0;
@@ -352,8 +427,21 @@
         }
 
         .table-striped > tbody > tr:nth-of-type(odd) > * {
-            background: rgba(255, 255, 255, 0.02);
-            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.03) !important;
+            color: var(--text-primary) !important;
+            --bs-table-bg-type: rgba(255, 255, 255, 0.03) !important;
+        }
+
+        .table-striped > tbody > tr:nth-of-type(even) > * {
+            background: var(--bg-secondary) !important;
+            color: var(--text-primary) !important;
+            --bs-table-bg-type: var(--bg-secondary) !important;
+        }
+
+        .table-hover > tbody > tr:hover > * {
+            background: var(--bg-tertiary) !important;
+            color: var(--text-primary) !important;
+            --bs-table-bg-state: var(--bg-tertiary) !important;
         }
 
         /* Card Header Colors - Dark Mode */
@@ -364,21 +452,57 @@
         }
 
         .card-header.bg-primary {
-            background: linear-gradient(90deg, rgba(139, 92, 246, 0.2) 0%, transparent 100%) !important;
-            border-left: 3px solid var(--accent-primary);
-            color: var(--text-primary);
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+            border: none;
+            color: white;
         }
 
         .card-header.bg-danger {
-            background: linear-gradient(90deg, rgba(239, 68, 68, 0.2) 0%, transparent 100%) !important;
-            border-left: 3px solid var(--accent-red);
-            color: var(--text-primary);
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+            border: none;
+            color: white;
         }
 
         .card-header.bg-warning {
             background: linear-gradient(90deg, rgba(245, 158, 11, 0.2) 0%, transparent 100%) !important;
             border-left: 3px solid var(--accent-yellow);
             color: var(--text-primary);
+        }
+
+        /* Card Header Colors - Light Mode */
+        [data-theme="light"] .card-header.bg-info,
+        :root:not([data-theme]) .card-header.bg-info {
+            background: linear-gradient(90deg, rgba(6, 182, 212, 0.3) 0%, rgba(6, 182, 212, 0.1) 100%) !important;
+        }
+
+        [data-theme="light"] .card-header.bg-primary,
+        :root:not([data-theme]) .card-header.bg-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+        }
+
+        [data-theme="light"] .card-header.bg-danger,
+        :root:not([data-theme]) .card-header.bg-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+        }
+
+        [data-theme="light"] .card-header.bg-warning,
+        :root:not([data-theme]) .card-header.bg-warning {
+            background: linear-gradient(90deg, rgba(245, 158, 11, 0.3) 0%, rgba(245, 158, 11, 0.1) 100%) !important;
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root:not([data-theme]) .card-header.bg-info {
+                background: linear-gradient(90deg, rgba(6, 182, 212, 0.3) 0%, rgba(6, 182, 212, 0.1) 100%) !important;
+            }
+            :root:not([data-theme]) .card-header.bg-primary {
+                background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+            }
+            :root:not([data-theme]) .card-header.bg-danger {
+                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+            }
+            :root:not([data-theme]) .card-header.bg-warning {
+                background: linear-gradient(90deg, rgba(245, 158, 11, 0.3) 0%, rgba(245, 158, 11, 0.1) 100%) !important;
+            }
         }
 
         /* 포지션 슬롯 스타일 - Dark Mode */
@@ -392,8 +516,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 16px;
-            border-radius: 10px;
+            padding: 8px 12px;
+            border-radius: 8px;
             border: 1px solid var(--border-subtle);
             background: var(--bg-tertiary);
             transition: all 0.2s ease;
@@ -443,12 +567,18 @@
 
         .player-name {
             font-weight: 500;
+            font-size: 0.85rem;
             color: var(--text-primary);
         }
 
         .position-slot.filled .player-name {
             color: var(--accent-green);
-            font-weight: bold;
+            font-weight: 600;
+        }
+
+        /* 라인 배치 제목 다크모드 */
+        .position-slots-title {
+            color: var(--text-primary);
         }
 
         /* 세로 대기석 스타일 - Dark Mode */
@@ -512,11 +642,7 @@
             flex-shrink: 0;
         }
 
-        /* 대기석 카드 헤더 스타일 강화 */
-        .card-header.bg-danger {
-            background-color: #dc3545 !important;
-            border-bottom: 1px solid #c82333;
-        }
+        /* 대기석 카드 헤더 스타일 - 제거됨 (상단에서 통합 관리) */
 
 
         /* 드래그 앤 드롭 스타일 */
@@ -1040,7 +1166,31 @@
         }
 
         .btn-close {
-            filter: invert(1);
+            filter: var(--btn-close-filter);
+        }
+
+        /* Theme Toggle Button */
+        .theme-toggle {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-default);
+            border-radius: 8px;
+            padding: 6px 10px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .theme-toggle:hover {
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+            border-color: var(--accent-primary);
+        }
+
+        .theme-toggle i {
+            font-size: 14px;
         }
 
         .mvp-player-btn, .ace-player-btn {
@@ -1172,6 +1322,102 @@
             color: var(--accent-red) !important;
         }
 
+        .text-warning {
+            color: var(--accent-yellow) !important;
+        }
+
+        /* 플레이어 상세 창 다크 모드 */
+        #playerDetailsContent {
+            color: var(--text-primary);
+        }
+
+        #playerDetailsContent h4,
+        #playerDetailsContent h5 {
+            color: var(--text-primary);
+        }
+
+        #playerDetailsContent p {
+            color: var(--text-secondary);
+        }
+
+        #playerDetailsContent hr {
+            border-color: var(--border-subtle);
+            opacity: 1;
+        }
+
+        /* 플레이어 하이라이트 박스 - 다크모드 대응 */
+        .player-highlight {
+            background: rgba(139, 92, 246, 0.2) !important;
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid rgba(139, 92, 246, 0.4);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Alert 다크모드 */
+        .alert-info {
+            background: rgba(6, 182, 212, 0.1);
+            border-color: rgba(6, 182, 212, 0.2);
+            color: var(--accent-cyan);
+        }
+
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: rgba(245, 158, 11, 0.2);
+            color: var(--accent-yellow);
+        }
+
+        /* 팀 카드 특수 스타일 - 워크플로우 4.6 */
+        .team1-card,
+        #team1Positions {
+            background: linear-gradient(135deg,
+                rgba(59, 130, 246, 0.05) 0%,
+                rgba(139, 92, 246, 0.05) 100%);
+        }
+
+        .team2-card,
+        #team2Positions {
+            background: linear-gradient(135deg,
+                rgba(239, 68, 68, 0.05) 0%,
+                rgba(236, 72, 153, 0.05) 100%);
+        }
+
+        /* 글로우 효과 유틸리티 - 워크플로우 5.1 */
+        .glow-text {
+            text-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+        }
+
+        .glow-box {
+            box-shadow:
+                0 0 30px rgba(139, 92, 246, 0.3),
+                inset 0 0 30px rgba(139, 92, 246, 0.05);
+        }
+
+        /* 그라디언트 텍스트 - 워크플로우 5.2 */
+        .gradient-text {
+            background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Skeleton 로딩 애니메이션 - 워크플로우 5.3 */
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .skeleton {
+            background: linear-gradient(90deg,
+                var(--bg-tertiary) 25%,
+                var(--bg-elevated) 50%,
+                var(--bg-tertiary) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 4px;
+        }
+
         /* Last Updated Text */
         .last-updated {
             text-align: center;
@@ -1256,7 +1502,10 @@
                         <a class="nav-link" href="#players">플레이어</a>
                     </li>
                 </ul>
-                <div class="ms-auto">
+                <div class="ms-auto d-flex align-items-center gap-2">
+                    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="테마 변경">
+                        <i class="fas fa-sun" id="themeIcon"></i>
+                    </button>
                     <button class="btn btn-outline-light btn-sm" id="refreshBtn" onclick="refreshData()">
                         <i class="fas fa-sync me-1"></i>새로고침
                     </button>
@@ -1284,7 +1533,7 @@
                     <!-- 10명 입력 -->
                     <div class="col-md-12 mb-4">
                         <div class="card">
-                            <div class="card-header bg-info text-white">
+                            <div class="card-header bg-info">
                                 <h5 class="mb-0">
                                     <i class="fas fa-users me-2"></i>참가자 입력 (10명)
                                 </h5>
@@ -1328,7 +1577,7 @@
                                         </ul>
                                         <!-- 탭 컨텐츠 -->
                                         <div class="tab-content border border-top-0 p-3" id="playerPickerTabContent"
-                                            style="height: 205px; overflow-y: auto;">
+                                            style="min-height: 205px; max-height: 300px; overflow-y: auto;">
                                             <div class="tab-pane fade show active" id="frequent-players" role="tabpanel">
                                                 <div id="frequentPlayersList" class="d-flex flex-wrap gap-2">
                                                     <!-- 자주함 플레이어 버튼들이 여기에 동적 생성 -->
@@ -1363,14 +1612,15 @@
                     <div id="generatedTeams" class="row justify-content-center align-items-start" style="display: none;">
                     <!-- 팀 1 대기석 -->
                     <div class="col-md-2 mb-4 d-flex justify-content-center" style="margin-top: 40px;">
-                        <div class="card h-100" style="width: 140px;">
-                            <div class="card-header bg-primary text-white text-center py-2">
+                        <div class="card" style="width: 140px; min-height: 390px;">
+                            <div class="card-header bg-primary text-center py-2">
                                 <h6 class="mb-0 small">팀 1 대기석</h6>
                             </div>
                             <div class="card-body p-2 d-flex flex-column" id="team1WaitingSection">
-                                <div id="team1Waiting" class="waiting-area-vertical flex-grow-1">
+                                <div id="team1Waiting" class="waiting-area-vertical flex-grow-1" style="min-height: 280px;">
                                     <!-- 대기중인 플레이어 버튼들이 여기에 동적 생성 -->
                                 </div>
+                                <!-- 승률 예측 영역이 여기에 동적 추가됨 -->
                             </div>
                         </div>
                     </div>
@@ -1378,7 +1628,7 @@
                     <!-- 팀 1 -->
                     <div class="col-md-3 mb-4">
                         <div class="card" style="height: 430px;">
-                            <div class="card-header bg-primary text-white">
+                            <div class="card-header bg-primary">
                                 <h5 class="mb-0 text-end">
                                     팀 1<i class="fas fa-users ms-2"></i>
                                 </h5>
@@ -1386,7 +1636,7 @@
                             <div class="card-body d-flex flex-column">
                                 <!-- 라인 배치 영역 -->
                                 <div class="mb-3 flex-grow-1">
-                                    <h6 class="mb-2 text-center">라인 배치</h6>
+                                    <h6 class="mb-2 text-center position-slots-title">라인 배치</h6>
                                     <div id="team1Positions" class="position-slots">
                                         <div class="position-slot pos-top" data-position="0" data-team="team1">
                                             <span class="position-name"><img src="img/positions/Top.svg" alt="탑" class="position-icon" onerror="this.outerHTML='<span class=\'position-text\'>탑</span>'"></span>
@@ -1424,7 +1674,7 @@
                     <!-- 팀 2 -->
                     <div class="col-md-3 mb-4">
                         <div class="card" style="height: 430px;">
-                            <div class="card-header bg-danger text-white">
+                            <div class="card-header bg-danger">
                                 <h5 class="mb-0">
                                     <i class="fas fa-users me-2"></i>팀 2
                                 </h5>
@@ -1432,7 +1682,7 @@
                             <div class="card-body d-flex flex-column">
                                 <!-- 라인 배치 영역 -->
                                 <div class="mb-3 flex-grow-1">
-                                    <h6 class="mb-2 text-center">라인 배치</h6>
+                                    <h6 class="mb-2 text-center position-slots-title">라인 배치</h6>
                                     <div id="team2Positions" class="position-slots">
                                         <div class="position-slot pos-top team2-reversed" data-position="0"
                                             data-team="team2">
@@ -1474,14 +1724,15 @@
 
                     <!-- 팀 2 대기석 -->
                     <div class="col-md-2 mb-4 d-flex justify-content-center" style="margin-top: 40px;">
-                        <div class="card h-100" style="width: 140px;">
-                            <div class="card-header bg-danger text-white text-center py-2">
+                        <div class="card" style="width: 140px; min-height: 390px;">
+                            <div class="card-header bg-danger text-center py-2">
                                 <h6 class="mb-0 small">팀 2 대기석</h6>
                             </div>
                             <div class="card-body p-2 d-flex flex-column" id="team2WaitingSection">
-                                <div id="team2Waiting" class="waiting-area-vertical flex-grow-1">
+                                <div id="team2Waiting" class="waiting-area-vertical flex-grow-1" style="min-height: 280px;">
                                     <!-- 대기중인 플레이어 버튼들이 여기에 동적 생성 -->
                                 </div>
+                                <!-- 승률 예측 영역이 여기에 동적 추가됨 -->
                             </div>
                         </div>
                     </div>
@@ -1622,6 +1873,68 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <!-- html2canvas for image capture -->
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <!-- Theme Toggle Script -->
+    <script>
+        // 테마 관리
+        function getSystemTheme() {
+            return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        }
+
+        function getStoredTheme() {
+            return localStorage.getItem('theme');
+        }
+
+        function setTheme(theme) {
+            if (theme === 'system') {
+                document.documentElement.removeAttribute('data-theme');
+                localStorage.removeItem('theme');
+            } else {
+                document.documentElement.setAttribute('data-theme', theme);
+                localStorage.setItem('theme', theme);
+            }
+            updateThemeIcon();
+        }
+
+        function getCurrentTheme() {
+            const stored = getStoredTheme();
+            if (stored) return stored;
+            return getSystemTheme();
+        }
+
+        function updateThemeIcon() {
+            const icon = document.getElementById('themeIcon');
+            const currentTheme = getCurrentTheme();
+
+            if (currentTheme === 'light') {
+                icon.className = 'fas fa-moon';
+            } else {
+                icon.className = 'fas fa-sun';
+            }
+        }
+
+        function toggleTheme() {
+            const currentTheme = getCurrentTheme();
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            setTheme(newTheme);
+        }
+
+        // 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            const storedTheme = getStoredTheme();
+            if (storedTheme) {
+                setTheme(storedTheme);
+            }
+            updateThemeIcon();
+        });
+
+        // 시스템 테마 변경 감지
+        window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', function(e) {
+            if (!getStoredTheme()) {
+                updateThemeIcon();
+            }
+        });
+    </script>
+
     <script type="module" src="js/simple_app.js" defer></script>
 </body>
 

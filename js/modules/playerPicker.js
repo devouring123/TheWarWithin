@@ -93,7 +93,7 @@ function addPlayerToInput(playerName) {
         // 없으면 추가
         // 10명 이상이면 추가하지 않음
         if (currentPlayers.length >= 10) {
-            alert('최대 10명까지만 선택할 수 있습니다.');
+            showPlayerLimitError();
             return;
         }
 
@@ -132,4 +132,39 @@ function setupInputChangeListener() {
     if (playersInput) {
         playersInput.addEventListener('input', updatePlayerSelectionState);
     }
+}
+
+// 10명 초과 선택 시 에러 메시지 표시
+function showPlayerLimitError() {
+    const playersInput = document.getElementById('playersInput');
+    if (!playersInput) return;
+
+    // 기존 에러 메시지가 있으면 제거
+    const existingError = document.getElementById('playerLimitError');
+    if (existingError) {
+        existingError.remove();
+    }
+
+    // 부모 요소에 position relative 설정
+    const parentNode = playersInput.parentNode;
+    if (parentNode.style.position !== 'relative') {
+        parentNode.style.position = 'relative';
+    }
+
+    // 에러 메시지 엘리먼트 생성
+    const errorDiv = document.createElement('div');
+    errorDiv.id = 'playerLimitError';
+    errorDiv.className = 'text-danger';
+    errorDiv.style.cssText = 'position: absolute; bottom: -24px; left: 0; right: 0; font-weight: 600; font-size: 0.9rem; text-align: center;';
+    errorDiv.textContent = '최대 10명까지만 선택할 수 있습니다.';
+
+    // textarea 바로 아래에 삽입
+    parentNode.appendChild(errorDiv);
+
+    // 3초 후 자동 제거
+    setTimeout(() => {
+        if (errorDiv.parentNode) {
+            errorDiv.remove();
+        }
+    }, 3000);
 }

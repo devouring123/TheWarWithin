@@ -385,8 +385,8 @@ function renderAllPlayerComparison(selectedPlayerName) {
             <span>
                 전체 전적: ${selectedPlayer.total_wins}승 ${selectedPlayer.total_losses}패 (${(selectedPlayer.overall_winrate * 100).toFixed(1)}%)
                 <span class="ms-3">
-                    <span style="color: #9333EA;"><i class="fas fa-crown me-1"></i>MVP ${mvpAceCounts.mvpCount}회</span>
-                    <span class="ms-2" style="color: #10B981;"><i class="fas fa-medal me-1"></i>ACE ${mvpAceCounts.aceCount}회</span>
+                    <span style="color: var(--accent-primary);"><i class="fas fa-crown me-1"></i>MVP ${mvpAceCounts.mvpCount}회</span>
+                    <span class="ms-2" style="color: var(--accent-green);"><i class="fas fa-medal me-1"></i>ACE ${mvpAceCounts.aceCount}회</span>
                 </span>
             </span>
         </div>
@@ -403,8 +403,8 @@ function renderAllPlayerComparison(selectedPlayerName) {
                 <h5>
                     <i class="fas fa-history me-2"></i>최근 ${recentGames.length}경기
                     <span class="ms-2" style="font-size: 0.85rem;">
-                        <span style="color: #9333EA;"><i class="fas fa-crown me-1"></i>${recentMvpCount}</span>
-                        <span class="ms-1" style="color: #10B981;"><i class="fas fa-medal me-1"></i>${recentAceCount}</span>
+                        <span style="color: var(--accent-primary);"><i class="fas fa-crown me-1"></i>${recentMvpCount}</span>
+                        <span class="ms-1" style="color: var(--accent-green);"><i class="fas fa-medal me-1"></i>${recentAceCount}</span>
                     </span>
                 </h5>
                 <div class="match-group" style="margin-bottom: 0;">
@@ -448,19 +448,19 @@ function renderAllPlayerComparison(selectedPlayerName) {
                         const highlightPlayers = (str, isWinnerSide) => {
                             let result = str;
 
-                            // 본인 하이라이트 (박스)
+                            // 본인 하이라이트 (박스) - CSS 클래스 사용
                             const selfRegex = new RegExp(`(${selectedPlayerName})`, 'gi');
-                            result = result.replace(selfRegex, `<span style="background: #e3f2fd; padding: 2px 6px; border-radius: 4px; border: 1px solid #90caf9; font-weight: 600;">$1</span>`);
+                            result = result.replace(selfRegex, `<span class="player-highlight">$1</span>`);
 
                             // MVP 하이라이트 (승리팀에서)
                             if (game.mvp && isWinnerSide) {
                                 const mvpRegex = new RegExp(`(${game.mvp})`, 'gi');
-                                result = result.replace(mvpRegex, `<span style="color: #9333EA;" class="fw-bold"><i class="fas fa-crown me-1"></i>$1</span>`);
+                                result = result.replace(mvpRegex, `<span class="fw-bold" style="color: var(--accent-primary);"><i class="fas fa-crown me-1"></i>$1</span>`);
                             }
                             // ACE 하이라이트 (패배팀에서)
                             if (game.ace && !isWinnerSide) {
                                 const aceRegex = new RegExp(`(${game.ace})`, 'gi');
-                                result = result.replace(aceRegex, `<span style="color: #10B981;" class="fw-bold"><i class="fas fa-medal me-1"></i>$1</span>`);
+                                result = result.replace(aceRegex, `<span class="fw-bold" style="color: var(--accent-green);"><i class="fas fa-medal me-1"></i>$1</span>`);
                             }
                             return result;
                         };
