@@ -2,6 +2,7 @@ import CONFIG from './config.js';
 import { updateConfig, updateScriptURL, getConfig } from './config.js';
 import { parseCSVData, parseRecordsCSV } from './dataManager.js';
 import { updateEloAfterGame } from './winRateDisplay.js';
+import { ToastManager } from './toast.js';
 
 let gameData = null;
 let gameRecords = []; // 게임 기록 데이터를 저장할 배열
@@ -61,12 +62,13 @@ function showConfigForm() {
             const loadingEl = document.getElementById('loading');
             loadingEl.style.display = 'flex';
             loadingEl.innerHTML = `
-                <div class="text-center">
-                    <div class="spinner-border text-light mb-3" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p class="text-light">시트 정보를 가져오는 중...</p>
+                <div class="loading-spinner">
+                    <div class="spinner-ring"></div>
+                    <div class="spinner-ring"></div>
+                    <div class="spinner-ring"></div>
                 </div>
+                <p class="loading-message">시트 정보를 가져오는 중...</p>
+                <p class="loading-submessage">잠시만 기다려주세요</p>
             `;
 
             try {
@@ -102,12 +104,13 @@ function showConfigForm() {
                 storeConfig(queryParams.spreadsheetId, queryParams.scriptId, sheetGid, recordsGid);
 
                 loadingEl.innerHTML = `
-                    <div class="text-center">
-                        <div class="spinner-border text-light mb-3" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="text-light">URL 파라미터로 설정된 데이터를 불러오는 중...</p>
+                    <div class="loading-spinner">
+                        <div class="spinner-ring"></div>
+                        <div class="spinner-ring"></div>
+                        <div class="spinner-ring"></div>
                     </div>
+                    <p class="loading-message">URL 파라미터로 설정된 데이터를 불러오는 중...</p>
+                    <p class="loading-submessage">잠시만 기다려주세요</p>
                 `;
 
                 resolve();
@@ -139,12 +142,13 @@ function showConfigForm() {
                 updateScriptURL(storedConfig.scriptId);
 
                 loadingEl.innerHTML = `
-                    <div class="text-center">
-                        <div class="spinner-border text-light mb-3" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="text-light">저장된 설정으로 데이터를 불러오는 중...</p>
+                    <div class="loading-spinner">
+                        <div class="spinner-ring"></div>
+                        <div class="spinner-ring"></div>
+                        <div class="spinner-ring"></div>
                     </div>
+                    <p class="loading-message">저장된 설정으로 데이터를 불러오는 중...</p>
+                    <p class="loading-submessage">잠시만 기다려주세요</p>
                 `;
 
                 resolve();
@@ -153,12 +157,13 @@ function showConfigForm() {
 
             // GID가 없으면 자동으로 가져오기
             loadingEl.innerHTML = `
-                <div class="text-center">
-                    <div class="spinner-border text-light mb-3" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p class="text-light">시트 정보를 가져오는 중...</p>
+                <div class="loading-spinner">
+                    <div class="spinner-ring"></div>
+                    <div class="spinner-ring"></div>
+                    <div class="spinner-ring"></div>
                 </div>
+                <p class="loading-message">시트 정보를 가져오는 중...</p>
+                <p class="loading-submessage">잠시만 기다려주세요</p>
             `;
 
             try {
@@ -194,12 +199,13 @@ function showConfigForm() {
                 storeConfig(storedConfig.spreadsheetId, storedConfig.scriptId, sheetGid, recordsGid);
 
                 loadingEl.innerHTML = `
-                    <div class="text-center">
-                        <div class="spinner-border text-light mb-3" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="text-light">저장된 설정으로 데이터를 불러오는 중...</p>
+                    <div class="loading-spinner">
+                        <div class="spinner-ring"></div>
+                        <div class="spinner-ring"></div>
+                        <div class="spinner-ring"></div>
                     </div>
+                    <p class="loading-message">저장된 설정으로 데이터를 불러오는 중...</p>
+                    <p class="loading-submessage">잠시만 기다려주세요</p>
                 `;
 
                 resolve();
@@ -264,18 +270,19 @@ function showConfigForm() {
 
             // 필수 필드가 입력되었는지 확인
             if (!spreadsheetId || !scriptId) {
-                alert('스프레드시트 ID와 Script ID를 입력해주세요.');
+                ToastManager.warning('스프레드시트 ID와 Script ID를 입력해주세요.');
                 return;
             }
 
             // 로딩 표시
             loadingEl.innerHTML = `
-                <div class="text-center">
-                    <div class="spinner-border text-light mb-3" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p class="text-light">시트 정보를 가져오는 중...</p>
+                <div class="loading-spinner">
+                    <div class="spinner-ring"></div>
+                    <div class="spinner-ring"></div>
+                    <div class="spinner-ring"></div>
                 </div>
+                <p class="loading-message">시트 정보를 가져오는 중...</p>
+                <p class="loading-submessage">잠시만 기다려주세요</p>
             `;
 
             try {
@@ -319,19 +326,20 @@ function showConfigForm() {
                 });
 
                 loadingEl.innerHTML = `
-                    <div class="text-center">
-                        <div class="spinner-border text-light mb-3" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="text-light">설정을 확인하고 데이터를 불러오는 중...</p>
+                    <div class="loading-spinner">
+                        <div class="spinner-ring"></div>
+                        <div class="spinner-ring"></div>
+                        <div class="spinner-ring"></div>
                     </div>
+                    <p class="loading-message">설정을 확인하고 데이터를 불러오는 중...</p>
+                    <p class="loading-submessage">잠시만 기다려주세요</p>
                 `;
 
                 resolve();
 
             } catch (error) {
                 console.error('GID 가져오기 실패:', error);
-                alert('GID를 자동으로 가져오는데 실패했습니다: ' + error.message);
+                ToastManager.error('GID를 자동으로 가져오는데 실패했습니다: ' + error.message);
 
                 // 폼 다시 표시
                 loadingEl.innerHTML = configFormHTML;
@@ -397,7 +405,7 @@ export async function loadData(showConfigFormFlag = true) {
         } catch (recordsError) {
             console.error('❌ 기록 시트 데이터 로드 실패:', recordsError);
             // 기록 시트 로드 실패는 치명적이지 않으므로 경고만 표시
-            alert('게임 기록 데이터를 불러오는 데 실패했습니다. 플레이어 비교 기능이 제한될 수 있습니다.');
+            ToastManager.warning('게임 기록 데이터를 불러오는 데 실패했습니다. 플레이어 비교 기능이 제한될 수 있습니다.');
         }
 
         return { gameData, gameRecords };
@@ -497,7 +505,7 @@ export function handleTeamWin(winningTeam, team1InputValue, team2InputValue) {
     const team2Input = team2InputValue.trim();
 
     if (!team1Input || !team2Input) {
-        alert('두 팀의 플레이어를 모두 입력해주세요.');
+        ToastManager.warning('두 팀의 플레이어를 모두 입력해주세요.');
         return null;
     }
 
@@ -506,12 +514,12 @@ export function handleTeamWin(winningTeam, team1InputValue, team2InputValue) {
         const team2Players = parseTeamInput(team2Input);
 
         if (team1Players.length !== 5) {
-            alert(`팀 1에 정확히 5명의 플레이어가 필요합니다. 현재 ${team1Players.length}명 입력되었습니다.`);
+            ToastManager.warning(`팀 1에 정확히 5명의 플레이어가 필요합니다. 현재 ${team1Players.length}명 입력되었습니다.`);
             return null;
         }
 
         if (team2Players.length !== 5) {
-            alert(`팀 2에 정확히 5명의 플레이어가 필요합니다. 현재 ${team2Players.length}명 입력되었습니다.`);
+            ToastManager.warning(`팀 2에 정확히 5명의 플레이어가 필요합니다. 현재 ${team2Players.length}명 입력되었습니다.`);
             return null;
         }
 
@@ -532,7 +540,7 @@ export function handleTeamWin(winningTeam, team1InputValue, team2InputValue) {
         return gameResult;
 
     } catch (error) {
-        alert('입력 데이터를 처리하는 중 오류가 발생했습니다: ' + error.message);
+        ToastManager.error('입력 데이터를 처리하는 중 오류가 발생했습니다: ' + error.message);
         return null;
     }
 }
@@ -548,16 +556,17 @@ function parseTeamInput(input) {
 }
 
 // 로딩 화면 표시
-function showLoading(message = '데이터를 불러오는 중...') {
+function showLoading(message = '데이터를 불러오는 중...', submessage = '잠시만 기다려주세요') {
     const loadingEl = document.getElementById('loading');
     loadingEl.style.display = 'flex';
     loadingEl.innerHTML = `
-        <div class="text-center">
-            <div class="spinner-border text-light mb-3" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <p class="text-light">${message}</p>
+        <div class="loading-spinner">
+            <div class="spinner-ring"></div>
+            <div class="spinner-ring"></div>
+            <div class="spinner-ring"></div>
         </div>
+        <p class="loading-message">${message}</p>
+        <p class="loading-submessage">${submessage}</p>
     `;
 
     document.getElementById('content').style.display = 'none';

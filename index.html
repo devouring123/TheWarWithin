@@ -282,14 +282,60 @@
             flex-direction: column;
         }
 
-        .loading i {
-            color: var(--accent-primary);
+        .loading-spinner {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            margin-bottom: 24px;
         }
 
-        .loading p {
-            color: var(--text-secondary);
-            font-weight: 500;
-            margin-top: 1rem;
+        .loading-spinner .spinner-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 3px solid transparent;
+        }
+
+        .loading-spinner .spinner-ring:nth-child(1) {
+            border-top-color: var(--accent-primary, #8b5cf6);
+            animation: spin 1.2s linear infinite;
+        }
+
+        .loading-spinner .spinner-ring:nth-child(2) {
+            border-right-color: #a78bfa;
+            animation: spin 1.2s linear infinite 0.15s;
+            width: 70%;
+            height: 70%;
+            top: 15%;
+            left: 15%;
+        }
+
+        .loading-spinner .spinner-ring:nth-child(3) {
+            border-bottom-color: #c4b5fd;
+            animation: spin 1.2s linear infinite 0.3s;
+            width: 40%;
+            height: 40%;
+            top: 30%;
+            left: 30%;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading .loading-message {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary, #fafafa);
+            margin-bottom: 8px;
+        }
+
+        .loading .loading-submessage {
+            font-size: 0.875rem;
+            color: var(--text-secondary, #a1a1aa);
+            margin: 0;
         }
 
         /* Modern Button Styles - Dark Mode */
@@ -884,6 +930,7 @@
             height: 24px;
             display: inline-block;
             vertical-align: middle;
+            filter: brightness(1.2);
         }
 
         /* 포지션 텍스트 대체 스타일 */
@@ -1202,6 +1249,7 @@
         .stats-table .table td {
             padding: 0.4rem 0.25rem;
             white-space: nowrap;
+            vertical-align: middle;
         }
 
         .stats-chart .card {
@@ -1394,7 +1442,7 @@
             background: var(--bg-secondary) !important;
             border: 1px solid var(--border-subtle) !important;
             border-radius: 12px !important;
-            overflow: hidden;
+            overflow: visible !important;
         }
 
         .player-card:hover {
@@ -1409,6 +1457,7 @@
 
         .player-card .card-body {
             color: var(--text-secondary);
+            overflow: visible !important;
         }
 
         /* Progress Bars - Dark Mode */
@@ -1481,6 +1530,15 @@
         #playerDetailsContent hr {
             border-color: var(--border-subtle);
             opacity: 1;
+        }
+
+        /* 플레이어 상세 영역 - 툴팁 표시를 위해 overflow visible */
+        #playerDetailsDisplayArea {
+            overflow: visible !important;
+        }
+
+        #playerDetailsDisplayArea .card-body {
+            overflow: visible !important;
         }
 
         /* 플레이어 하이라이트 박스 - 다크모드 대응 */
@@ -1655,8 +1713,13 @@
     <div class="container mt-4">
         <!-- Loading -->
         <div id="loading" class="loading">
-            <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
-            <p>데이터를 불러오는 중...</p>
+            <div class="loading-spinner">
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+            </div>
+            <p class="loading-message">데이터를 불러오는 중...</p>
+            <p class="loading-submessage">잠시만 기다려주세요</p>
         </div>
 
         <!-- Content -->
@@ -1977,14 +2040,19 @@
 
             <!-- Players Section -->
             <section id="players" class="mb-5">
-                <h2 class="mb-4">
-                    <i class="fas fa-users me-2"></i>
-                    플레이어 목록
-                </h2>
-                <div class="d-flex justify-content-end mb-3">
-                    <button class="btn btn-outline-secondary btn-sm" id="clearSelectionBtn">
-                        <i class="fas fa-times-circle me-1"></i>선택 초기화
-                    </button>
+                <div class="d-flex justify-content-between align-items-baseline mb-1">
+                    <h2 class="mb-0">
+                        <i class="fas fa-users me-2"></i>
+                        플레이어 목록
+                    </h2>
+                    <div class="d-flex gap-2 card-controls">
+                        <button class="btn btn-outline-secondary btn-sm" id="toggleCardMode">
+                            <i class="fas fa-compress-alt"></i> 카드 접기
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" id="clearSelectionBtn">
+                            <i class="fas fa-times-circle me-1"></i>선택 초기화
+                        </button>
+                    </div>
                 </div>
                 <!-- Player Details Display Area -->
                 <div id="playerDetailsDisplayArea" class="card mb-4" style="display: none;">
@@ -1994,6 +2062,11 @@
                 </div>
                 <div class="row" id="playersList">
                     <!-- 동적으로 생성 -->
+                </div>
+
+                <!-- Tag Glossary Section -->
+                <div id="tagGlossaryContainer" class="mt-4">
+                    <!-- 태그 용어집이 여기에 렌더링됨 -->
                 </div>
             </section>
 
@@ -2074,6 +2147,9 @@
     </script>
 
     <script type="module" src="js/simple_app.js" defer></script>
+
+    <!-- Toast Container -->
+    <div id="toastContainer"></div>
 </body>
 
 </html>

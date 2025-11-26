@@ -1,5 +1,7 @@
 // 팀 생성 및 관리 모듈 (대기석 + 순차적 포지션 배정)
 
+import { ToastManager } from './toast.js';
+
 // 게임 데이터 저장
 let gameDataForTeamBuilder = null;
 
@@ -111,7 +113,7 @@ function handleGenerateTeams() {
     const inputText = playersInput.value.trim();
     
     if (!inputText) {
-        alert('참가자 이름을 입력해주세요.');
+        ToastManager.warning('참가자 이름을 입력해주세요.');
         return;
     }
     
@@ -121,7 +123,7 @@ function handleGenerateTeams() {
         .filter(name => name.length > 0);
     
     if (players.length !== 10) {
-        alert(`정확히 10명의 플레이어가 필요합니다. 현재 ${players.length}명이 입력되었습니다.`);
+        ToastManager.warning(`정확히 10명의 플레이어가 필요합니다. 현재 ${players.length}명이 입력되었습니다.`);
         return;
     }
     
@@ -163,7 +165,7 @@ function handleGenerateTeams() {
         
     } catch (error) {
         console.error('팀 생성 오류:', error);
-        alert('팀 생성 중 오류가 발생했습니다: ' + error.message);
+        ToastManager.error('팀 생성 중 오류가 발생했습니다: ' + error.message);
     }
 }
 
@@ -256,6 +258,23 @@ function getPositionTagForPlayer(playerName, positionIndex) {
     const tag = positionTags[positionKey];
     const positionName = POSITIONS[positionIndex];
 
+    // 포지션별 색상 설정
+    const positionHighColors = {
+        top: '#17a2b8',
+        jungle: '#28a745',
+        mid: '#ffc107',
+        adc: '#dc3545',
+        support: '#6f42c1'
+    };
+
+    const positionLowColors = {
+        top: '#5C6B7A',
+        jungle: '#4A5568',
+        mid: '#78716C',
+        adc: '#64748b',
+        support: '#475569'
+    };
+
     const tooltips = {
         top: { high: '탑 승률 65% 이상', low: '탑 승률 35% 이하' },
         jungle: { high: '정글 승률 65% 이상', low: '정글 승률 35% 이하' },
@@ -265,11 +284,13 @@ function getPositionTagForPlayer(playerName, positionIndex) {
     };
 
     if (tag && winRate >= 65) {
-        const tooltip = tooltips[positionKey].high;
-        return `<span class="synergy-badge position-high position-tag-mini" title="${tooltip}">${tag.high}</span>`;
+        const tooltip = `${tooltips[positionKey].high} (${winRate.toFixed(0)}%, ${games}판)`;
+        const color = positionHighColors[positionKey] || '#FBBF24';
+        return `<span class="player-tag position-tag-mini" style="background: ${color}20; color: ${color}; border: 1px solid ${color}40;" data-tooltip="${tooltip}">${tag.high}</span>`;
     } else if (tag && winRate <= 35) {
-        const tooltip = tooltips[positionKey].low;
-        return `<span class="synergy-badge position-low position-tag-mini" title="${tooltip}">${tag.low}</span>`;
+        const tooltip = `${tooltips[positionKey].low} (${winRate.toFixed(0)}%, ${games}판)`;
+        const color = positionLowColors[positionKey] || '#64748b';
+        return `<span class="player-tag position-tag-mini" style="background: ${color}20; color: ${color}; border: 1px solid ${color}40;" data-tooltip="${tooltip}">${tag.low}</span>`;
     }
 
     return '';
@@ -372,7 +393,7 @@ function handleWaitingPlayerClick(teamId, playerName, buttonElement) {
     }
     
     if (nextPosition === -1) {
-        alert('이미 모든 포지션이 배정되었습니다.');
+        ToastManager.info('이미 모든 포지션이 배정되었습니다.');
         return;
     }
     
