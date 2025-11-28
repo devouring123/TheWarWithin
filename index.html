@@ -1751,16 +1751,19 @@
     </nav>
 
     <div class="container mt-4">
-        <!-- Loading -->
+        <!-- Loading Spinner -->
         <div id="loading" class="loading">
             <div class="loading-spinner">
                 <div class="spinner-ring"></div>
                 <div class="spinner-ring"></div>
                 <div class="spinner-ring"></div>
             </div>
-            <p class="loading-message">데이터를 불러오는 중...</p>
+            <p class="loading-message">Google Sheets에서 실시간 데이터를 불러오는 중...</p>
             <p class="loading-submessage">잠시만 기다려주세요</p>
         </div>
+
+        <!-- Config Form / Error Container -->
+        <div id="configContainer" style="display: none; justify-content: center; align-items: center; min-height: 60vh;"></div>
 
         <!-- Content -->
         <div id="content" style="display: none;">

@@ -1,6 +1,6 @@
 // 모듈 임포트
-import { setupEventListeners, toggleCompactMode } from './modules/uiManager.js';
-import { loadData, hideLoading, showError } from './modules/gameManager.js';
+import { setupEventListeners, toggleCompactMode, SpinnerManager } from './modules/uiManager.js';
+import { loadData, showError, hideLoading } from './modules/gameManager.js';
 import { renderOverviewStats, renderStatsTable, renderPlayersList, renderCharts, updateLastUpdated, renderMatchHistory, showCaptureButton } from './modules/uiManager.js';
 import { handlePlayerClick, clearPlayerSelection, getSelectedPlayers, setGameRecords, setGameData, renderRivalChart, renderTeammateChart } from './modules/playerManager.js';
 import { initializeWinRateSystem, updateWinRateDisplay } from './modules/winRateDisplay.js';

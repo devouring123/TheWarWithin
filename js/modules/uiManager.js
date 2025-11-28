@@ -10,42 +10,30 @@ let selectedAce = null;
 let pendingGameResult = null;
 let pendingWinningTeam = null;
 
-// 로딩 오버레이 표시
-function showLoadingOverlay(message = '처리 중...') {
-    // 기존 오버레이 제거
-    hideLoadingOverlay();
+// 로딩 스피너 관리 (HTML의 #loading 요소 사용)
+export const SpinnerManager = {
+    getOverlay: function() {
+        return document.getElementById('loading');
+    },
+    show: function(message = '처리 중...') {
+        const overlay = this.getOverlay();
+        if (!overlay) return;
 
-    const overlay = document.createElement('div');
-    overlay.id = 'loadingOverlay';
-    overlay.className = 'loading-overlay';
-    overlay.innerHTML = `
-        <div class="loading-overlay-content">
-            <div class="loading-spinner">
-                <div class="spinner-ring"></div>
-                <div class="spinner-ring"></div>
-                <div class="spinner-ring"></div>
-            </div>
-            <p class="loading-message">${message}</p>
-            <p class="loading-submessage">잠시만 기다려주세요...</p>
-        </div>
-    `;
+        // 메시지 업데이트
+        const messageEl = overlay.querySelector('.loading-message');
+        if (messageEl) {
+            messageEl.textContent = message;
+        }
 
-    document.body.appendChild(overlay);
-
-    // 애니메이션을 위한 지연
-    requestAnimationFrame(() => {
-        overlay.classList.add('show');
-    });
-}
-
-// 로딩 오버레이 숨기기
-function hideLoadingOverlay() {
-    const overlay = document.getElementById('loadingOverlay');
-    if (overlay) {
-        overlay.classList.remove('show');
-        setTimeout(() => overlay.remove(), 300);
+        overlay.style.display = 'flex';
+    },
+    hide: function() {
+        const overlay = this.getOverlay();
+        if (overlay) {
+            overlay.style.display = 'none';
+        }
     }
-}
+};
 
 // 컴팩트 모드 설정
 let isCompactMode = localStorage.getItem('playerCardCompact') === 'true';
@@ -828,7 +816,7 @@ async function confirmWinAndSave() {
     mvpModal.hide();
 
     // 로딩 오버레이 표시
-    showLoadingOverlay('경기 결과를 저장하는 중...');
+    SpinnerManager.show('경기 결과를 저장하는 중...');
 
     try {
         // Google Sheets에 기록 (MVP/ACE 포함)
@@ -852,7 +840,7 @@ async function confirmWinAndSave() {
         saveMatchToLocalStorage(matchData);
 
         // 로딩 오버레이 숨기기
-        hideLoadingOverlay();
+        SpinnerManager.hide();
 
         ToastManager.success(`팀 ${pendingWinningTeam} 승리! MVP: ${selectedMvp}, ACE: ${selectedAce}`);
         resetToWaitingAreaWithTeams();
@@ -862,7 +850,7 @@ async function confirmWinAndSave() {
 
     } catch (error) {
         console.error('저장 실패:', error);
-        hideLoadingOverlay();
+        SpinnerManager.hide();
         ToastManager.error('기록 저장에 실패했습니다: ' + error.message);
     }
 }
