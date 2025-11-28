@@ -34,11 +34,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const toggleCardModeBtn = document.getElementById('toggleCardMode');
             if (toggleCardModeBtn) {
                 toggleCardModeBtn.addEventListener('click', () => {
-                    toggleCompactMode();
-                    // 플레이어 목록 다시 렌더링
-                    if (gameData) {
-                        renderPlayersList(gameData, getSelectedPlayers(), handlePlayerClick);
-                    }
+                    toggleCompactMode(gameData);
                 });
             }
 

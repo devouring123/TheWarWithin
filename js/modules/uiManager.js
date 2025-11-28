@@ -51,10 +51,43 @@ function hideLoadingOverlay() {
 let isCompactMode = localStorage.getItem('playerCardCompact') === 'true';
 
 // 컴팩트 모드 토글 함수
-export function toggleCompactMode() {
+export function toggleCompactMode(gameData) {
     isCompactMode = !isCompactMode;
     localStorage.setItem('playerCardCompact', isCompactMode.toString());
     updateCompactModeButton();
+
+    // 기존 카드들의 클래스 토글 (애니메이션)
+    const cardCols = document.querySelectorAll('.player-card-col');
+    const playerCards = document.querySelectorAll('.player-card');
+
+    cardCols.forEach(col => {
+        if (isCompactMode) {
+            col.classList.remove('detailed-mode');
+            col.classList.add('compact-mode');
+        } else {
+            col.classList.remove('compact-mode');
+            col.classList.add('detailed-mode');
+        }
+    });
+
+    playerCards.forEach(card => {
+        if (isCompactMode) {
+            card.classList.add('player-card-compact');
+        } else {
+            card.classList.remove('player-card-compact');
+        }
+    });
+
+    // 상세 모드로 전환 시 차트 렌더링
+    if (!isCompactMode && gameData?.players) {
+        const sortedPlayers = [...gameData.players].sort((a, b) => a.name.localeCompare(b.name, 'ko-KR'));
+        setTimeout(() => {
+            sortedPlayers.forEach((player, index) => {
+                renderPlayerPositionChart(player, `playerChart${index}`);
+            });
+        }, 100);
+    }
+
     return isCompactMode;
 }
 
@@ -266,82 +299,63 @@ export function renderPlayersList(gameData, selectedPlayers, handlePlayerClick) 
         const recentForm = getRecentFormHtml(player.name);
         const playerTags = getPlayerTagsHtml(player.name, 2);
 
-        // 컴팩트 모드일 때 간소화된 카드
-        if (isCompactMode) {
-            return `
-                <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 compact-card-col">
-                    <div class="card player-card player-card-compact" id="player-card-${player.name}" onclick="handlePlayerClick('${player.name}')" oncontextmenu="event.preventDefault(); if(this.classList.contains('selected')) { handlePlayerClick('${player.name}'); }">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div class="d-flex align-items-center gap-1">
-                                    <span class="fw-bold card-title mb-0">${player.name}</span>
-                                    ${getTierBadgeHtml(player.tier)}
-                                </div>
-                                <span class="winrate-badge ${winrateClass}" style="font-size: 0.85rem;">
-                                    ${(player.overall_winrate * 100).toFixed(1)}%
-                                </span>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div class="d-flex align-items-center gap-2">
-                                    ${recentForm}
-                                </div>
-                                <small class="text-muted">${player.total_games}게임</small>
-                            </div>
-                            <div class="compact-tags">
-                                ${playerTags}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // 일반 모드 - 기존 카드
+        // 통합 카드 - 컴팩트/상세 모드 모두 포함
         return `
-            <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3" onclick="handlePlayerClick('${player.name}')" oncontextmenu="event.preventDefault(); if(document.getElementById('player-card-${player.name}').classList.contains('selected')) { handlePlayerClick('${player.name}'); }">
-                <div class="card player-card h-100" id="player-card-${player.name}">
+            <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 player-card-col ${isCompactMode ? 'compact-mode' : 'detailed-mode'}">
+                <div class="card player-card ${isCompactMode ? 'player-card-compact' : ''}" id="player-card-${player.name}" onclick="handlePlayerClick('${player.name}')" oncontextmenu="event.preventDefault(); if(this.classList.contains('selected')) { handlePlayerClick('${player.name}'); }">
                     <div class="card-body p-2 d-flex flex-column">
-                        <div class="d-flex justify-content-between align-items-start mb-1">
-                            <h6 class="card-title mb-0 fw-bold">
-                                ${player.name}
-                                <span class="ms-1">${getTierBadgeHtml(player.tier)}</span>
-                            </h6>
-                            <span class="winrate-badge ${winrateClass} fs-6">
+                        <!-- 공통 헤더 -->
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <div class="d-flex align-items-center gap-1">
+                                <span class="fw-bold card-title mb-0">${player.name}</span>
+                                ${getTierBadgeHtml(player.tier)}
+                            </div>
+                            <span class="winrate-badge ${winrateClass}" style="font-size: 0.85rem;">
                                 ${(player.overall_winrate * 100).toFixed(1)}%
                             </span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <div>${recentForm}</div>
+
+                        <!-- 공통 폼/게임수 -->
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                ${recentForm}
+                            </div>
                             <small class="text-muted">${player.total_games}게임</small>
                         </div>
 
-                        ${playerTags}
-
-                        <div class="positions">
-                            <small class="text-muted d-block mb-1">주요 포지션</small>
-                            <div>
-                                ${positions}
-                            </div>
+                        <!-- 태그 -->
+                        <div class="compact-tags">
+                            ${playerTags}
                         </div>
 
-                        <div class="mb-2">
-                            <div class="row text-center">
-                                <div class="col">
-                                    <small class="text-muted d-block">승</small>
-                                    <strong class="text-success">${player.total_wins}</strong>
-                                </div>
-                                <div class="col">
-                                    <small class="text-muted d-block">패</small>
-                                    <strong class="text-danger">${player.total_losses}</strong>
+                        <!-- 상세 정보 (확장 영역) -->
+                        <div class="card-detail-content">
+                            <div class="positions">
+                                <small class="text-muted d-block mb-1">주요 포지션</small>
+                                <div>
+                                    ${positions}
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- 개인 포지션별 승률 차트 -->
-                        <div class="position-chart">
-                            <small class="text-muted d-block mb-1">포지션별 승률</small>
-                            <div style="height: 100px; position: relative;">
-                                <canvas id="${chartId}"></canvas>
+                            <div class="mb-2">
+                                <div class="row text-center">
+                                    <div class="col">
+                                        <small class="text-muted d-block">승</small>
+                                        <strong class="text-success">${player.total_wins}</strong>
+                                    </div>
+                                    <div class="col">
+                                        <small class="text-muted d-block">패</small>
+                                        <strong class="text-danger">${player.total_losses}</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 개인 포지션별 승률 차트 -->
+                            <div class="position-chart">
+                                <small class="text-muted d-block mb-1">포지션별 승률</small>
+                                <div style="height: 100px; position: relative;">
+                                    <canvas id="${chartId}"></canvas>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -350,7 +364,7 @@ export function renderPlayersList(gameData, selectedPlayers, handlePlayerClick) 
         `;
     }).join('');
 
-    // 일반 모드일 때만 차트 렌더링
+    // 상세 모드일 때만 차트 렌더링
     if (!isCompactMode) {
         setTimeout(() => {
             sortedPlayers.forEach((player, index) => {

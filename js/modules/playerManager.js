@@ -1686,7 +1686,7 @@ export function getPlayerTagsHtml(playerName, maxTags = 2) {
     };
 
     return `
-        <div class="player-tags d-flex flex-wrap gap-1 mt-1">
+        <div class="player-tags">
             ${priorityTags.map(tag => `
                 <span class="player-tag ${getSpecialClass(tag.icon)}" style="background: ${tag.color}20; color: ${tag.color}; border: 1px solid ${tag.color}40;" data-tooltip="${tag.title}">
                     <i class="fas ${tag.icon} me-1"></i>${tag.text}

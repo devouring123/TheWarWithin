@@ -1,4 +1,5 @@
 /* 플레이어 목록 스타일 개선 - Dark/Light Mode */
+
 .player-card .card-title {
     font-size: 1.1rem !important;
     font-weight: 600 !important;
@@ -278,8 +279,8 @@
 .player-tags {
     display: flex;
     flex-wrap: wrap;
-    justify-content: space-evenly;
-    gap: 3px;
+    justify-content: center;
+    gap: 4px;
     min-height: 24px;
     margin-top: 0.5rem;
     margin-bottom: 3px;
@@ -496,25 +497,36 @@
    플레이어 카드 컴팩트 모드 - Dark/Light Mode 지원
    ============================================ */
 
+/* 카드 확장/축소 애니메이션 */
+.card-detail-content {
+    max-height: 500px;
+    opacity: 1;
+    overflow: hidden;
+    transition: max-height 0.25s ease-in-out, opacity 0.2s ease-in-out, margin 0.2s ease-in-out;
+    margin-top: 8px;
+}
+
+.compact-mode .card-detail-content {
+    max-height: 0;
+    opacity: 0;
+    margin-top: 0;
+}
+
+.player-card-col {
+    transition: margin-bottom 0.2s ease-in-out;
+}
+
+.player-card-col.detailed-mode {
+    margin-bottom: 0;
+}
+
+.player-card-col.compact-mode {
+    margin-bottom: 0;
+}
+
 /* 컴팩트 카드 기본 스타일 (다크 모드) */
 .player-card-compact {
     transition: all 0.2s ease;
-}
-
-.player-card-compact .card-body {
-    padding: 0.5rem !important;
-}
-
-.player-card-compact .card-title {
-    font-size: 0.9rem !important;
-}
-
-.player-card-compact .tier-badge {
-    transform: scale(0.85);
-}
-
-.player-card-compact .recent-form {
-    transform: scale(0.9);
 }
 
 /* 컴팩트 모드 호버 효과 */
@@ -567,26 +579,17 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 2px;
+    gap: 4px;
 }
 
 .compact-tags .no-tags {
     display: inline-flex;
     align-items: center;
-    padding: 1px 5px !important;
-    font-size: 0.6rem !important;
-    line-height: 1.3;
-    border-radius: 4px !important;
     background: rgba(128, 128, 128, 0.15) !important;
     color: #888 !important;
     border: 1px solid rgba(128, 128, 128, 0.2) !important;
     cursor: default;
     position: relative;
-}
-
-.compact-tags .no-tags i {
-    font-size: 0.5rem !important;
-    margin-right: 2px;
 }
 
 .compact-tags .no-tags:hover::after {
@@ -605,54 +608,16 @@
     margin-bottom: 4px;
 }
 
-.compact-tags .player-tag {
-    padding: 1px 5px !important;
-    font-size: 0.6rem !important;
-    border-radius: 4px !important;
-    line-height: 1.3 !important;
-}
-
-.compact-tags .player-tag i {
-    font-size: 0.5rem !important;
-    margin-right: 2px !important;
-}
-
 /* 컴팩트 모드 반응형 */
 @media (max-width: 576px) {
     .player-card-compact .card-title {
-        font-size: 0.8rem !important;
-    }
-
-    .player-card-compact .winrate-badge {
-        font-size: 0.75rem !important;
-    }
-
-    .compact-tags .player-tag {
-        padding: 1px 4px;
-        font-size: 0.55rem;
-    }
-
-    .compact-tags .player-tag i {
-        font-size: 0.45rem;
-    }
-
-    .compact-tags .no-tags {
-        padding: 1px 4px;
-        font-size: 0.55rem;
+        font-size: 0.9rem !important;
     }
 }
 
 /* 컴팩트 카드 하단 여백 제거 */
-.player-card-compact .card-body {
-    padding: 0.4rem !important;
-}
-
 .player-card-compact {
     height: auto !important;
-}
-
-.player-card-compact .compact-tags {
-    margin-top: 2px;
 }
 
 /* 토글 버튼 컨테이너 */
