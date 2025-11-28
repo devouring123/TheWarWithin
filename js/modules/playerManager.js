@@ -1469,58 +1469,56 @@ export function getPlayerTags(playerName) {
         support: '#475569'
     };
 
-    if (player?.positions) {
-        Object.entries(player.positions).forEach(([pos, data]) => {
-            const games = (data.wins || 0) + (data.losses || 0);
-            if (games >= 5) {
-                const winRate = games > 0 ? (data.wins / games) * 100 : 0;
-                const posTag = positionTags[pos];
-                const icon = positionIcons[pos] || 'fa-gamepad';
-                const posName = positionNames[pos] || pos;
+    // ========================================
+    // 0. MVP/ACE 누적 태그
+    // ========================================
+    const mvpAceRatio = getPlayerMvpAceRatio(playerName);
 
-                if (posTag && winRate >= 65) {
-                    tags.push({
-                        icon: icon,
-                        text: posTag.high,
-                        color: positionHighColors[pos] || '#FBBF24',
-                        title: `${posName} 승률 65% 이상 (${winRate.toFixed(0)}%, ${games}판)`
-                    });
-                } else if (posTag && winRate <= 35) {
-                    tags.push({
-                        icon: icon,
-                        text: posTag.low,
-                        color: positionLowColors[pos] || '#64748b',
-                        title: `${posName} 승률 35% 이하 (${winRate.toFixed(0)}%, ${games}판)`
-                    });
-                }
-            }
+    // ⭐ MVP 수집가: MVP/ACE가 기록된 게임 중 MVP 비율 15% 이상
+    if (mvpAceRatio.gamesWithMvpAce >= 10 && mvpAceRatio.mvpRate >= 15) {
+        tags.push({
+            icon: 'fa-star',
+            text: 'MVP 수집가',
+            color: '#FBBF24',
+            title: `MVP ${mvpAceRatio.mvpCount}회 / ${mvpAceRatio.gamesWithMvpAce}게임 (${mvpAceRatio.mvpRate.toFixed(0)}%)`
         });
     }
 
-    // 최근 10판 MVP/ACE 태그 (기존 synergy-badge에서 통합)
-    const recentMvpAce = getRecentMvpAceCounts(playerName);
-    if (recentMvpAce.mvpCount >= 3) {
+    // 😢 위로 전문: MVP/ACE가 기록된 게임 중 ACE 비율 15% 이상
+    if (mvpAceRatio.gamesWithMvpAce >= 10 && mvpAceRatio.aceRate >= 15) {
         tags.push({
-            icon: 'fa-crown',
-            text: '"캐리"',
-            color: '#FFD700',
-            title: `최근 10판 MVP ${recentMvpAce.mvpCount}회 - 캐리력 폭발!`
-        });
-    }
-    if (recentMvpAce.aceCount >= 3) {
-        tags.push({
-            icon: 'fa-skull-crossbones',
-            text: '난 무죄야',
-            color: '#8b0000',
-            title: `최근 10판 ACE ${recentMvpAce.aceCount}회 - 나만 잘했어...`
+            icon: 'fa-sad-tear',
+            text: '위로 전문',
+            color: '#60A5FA',
+            title: `ACE ${mvpAceRatio.aceCount}회 / ${mvpAceRatio.gamesWithMvpAce}게임 (${mvpAceRatio.aceRate.toFixed(0)}%)`
         });
     }
 
     // ========================================
-    // 최근 폼 기반 태그 (최근 10판 기준)
+    // 1. 연속 기록, 최근 폼, 최근 활약 태그
     // ========================================
 
-    // 최근 10판 기준 태그
+    // 👑 연승 괴물: 현재 3연승+
+    if (streak.type === 'win' && streak.count >= 3) {
+        tags.push({
+            icon: 'fa-fire-alt',
+            text: `${streak.count}연승`,
+            color: '#F59E0B',
+            title: `현재 ${streak.count}연승 중! 누가 막을 수 있을까?`
+        });
+    }
+
+    // 📉 추락 중: 현재 3연패+
+    if (streak.type === 'lose' && streak.count >= 3) {
+        tags.push({
+            icon: 'fa-arrow-trend-down',
+            text: `${streak.count}연패`,
+            color: '#DC2626',
+            title: `현재 ${streak.count}연패 중... 반등을 기다리는 중`
+        });
+    }
+
+    // 최근 10판 기준 폼 태그
     if (recentGames >= 10) {
         const winRate = (recentWins / recentGames) * 100;
 
@@ -1553,49 +1551,75 @@ export function getPlayerTags(playerName) {
         }
     }
 
-    // 👑 연승 괴물: 현재 3연승+
-    if (streak.type === 'win' && streak.count >= 3) {
+    // 최근 10판 MVP/ACE 태그 (최근 활약)
+    const recentMvpAce = getRecentMvpAceCounts(playerName);
+    if (recentMvpAce.mvpCount >= 3) {
         tags.push({
-            icon: 'fa-fire-alt',
-            text: `${streak.count}연승`,
+            icon: 'fa-crown',
+            text: '"캐리"',
             color: '#FFD700',
-            title: `현재 ${streak.count}연승 중! 누가 막을 수 있을까?`
+            title: `최근 10판 MVP ${recentMvpAce.mvpCount}회 - 캐리력 폭발!`
         });
     }
-
-    // 📉 추락 중: 현재 3연패+
-    if (streak.type === 'lose' && streak.count >= 3) {
+    if (recentMvpAce.aceCount >= 3) {
         tags.push({
-            icon: 'fa-chart-line-down',
-            text: `${streak.count}연패`,
-            color: '#DC2626',
-            title: `현재 ${streak.count}연패 중... 반등을 기다리는 중`
-        });
-    }
-
-    // ⭐ MVP 수집가: MVP/ACE가 기록된 게임 중 MVP 비율 15% 이상
-    const mvpAceRatio = getPlayerMvpAceRatio(playerName);
-    if (mvpAceRatio.gamesWithMvpAce >= 10 && mvpAceRatio.mvpRate >= 15) {
-        tags.push({
-            icon: 'fa-star',
-            text: 'MVP 수집가',
-            color: '#FBBF24',
-            title: `MVP ${mvpAceRatio.mvpCount}회 / ${mvpAceRatio.gamesWithMvpAce}게임 (${mvpAceRatio.mvpRate.toFixed(0)}%)`
-        });
-    }
-
-    // 😢 위로 전문: MVP/ACE가 기록된 게임 중 ACE 비율 15% 이상
-    if (mvpAceRatio.gamesWithMvpAce >= 10 && mvpAceRatio.aceRate >= 15) {
-        tags.push({
-            icon: 'fa-sad-tear',
-            text: '위로 전문',
-            color: '#60A5FA',
-            title: `ACE ${mvpAceRatio.aceCount}회 / ${mvpAceRatio.gamesWithMvpAce}게임 (${mvpAceRatio.aceRate.toFixed(0)}%)`
+            icon: 'fa-skull-crossbones',
+            text: '난 무죄야',
+            color: '#8b0000',
+            title: `최근 10판 ACE ${recentMvpAce.aceCount}회 - 나만 잘했어...`
         });
     }
 
     // ========================================
-    // 상대/시너지 관련 태그 (최근 10판 기준)
+    // 2. 포지션 태그 고승률
+    // ========================================
+    if (player?.positions) {
+        Object.entries(player.positions).forEach(([pos, data]) => {
+            const games = (data.wins || 0) + (data.losses || 0);
+            if (games >= 5) {
+                const winRate = games > 0 ? (data.wins / games) * 100 : 0;
+                const posTag = positionTags[pos];
+                const icon = positionIcons[pos] || 'fa-gamepad';
+                const posName = positionNames[pos] || pos;
+
+                if (posTag && winRate >= 65) {
+                    tags.push({
+                        icon: icon,
+                        text: posTag.high,
+                        color: positionHighColors[pos] || '#FBBF24',
+                        title: `${posName} 승률 65% 이상 (${winRate.toFixed(0)}%, ${games}판)`
+                    });
+                }
+            }
+        });
+    }
+
+    // ========================================
+    // 3. 포지션 태그 저승률
+    // ========================================
+    if (player?.positions) {
+        Object.entries(player.positions).forEach(([pos, data]) => {
+            const games = (data.wins || 0) + (data.losses || 0);
+            if (games >= 5) {
+                const winRate = games > 0 ? (data.wins / games) * 100 : 0;
+                const posTag = positionTags[pos];
+                const icon = positionIcons[pos] || 'fa-gamepad';
+                const posName = positionNames[pos] || pos;
+
+                if (posTag && winRate <= 35) {
+                    tags.push({
+                        icon: icon,
+                        text: posTag.low,
+                        color: positionLowColors[pos] || '#64748b',
+                        title: `${posName} 승률 35% 이하 (${winRate.toFixed(0)}%, ${games}판)`
+                    });
+                }
+            }
+        });
+    }
+
+    // ========================================
+    // 4. 상대/시너지 관련 태그 (최근 10판 기준)
     // ========================================
 
     // 상대/시너지 관련 태그 계산 (최근 10판 기준)
