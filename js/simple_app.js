@@ -2,7 +2,7 @@
 import { setupEventListeners, toggleCompactMode, SpinnerManager } from './modules/uiManager.js';
 import { loadData, showError, hideLoading } from './modules/gameManager.js';
 import { renderOverviewStats, renderStatsTable, renderPlayersList, renderCharts, updateLastUpdated, renderMatchHistory, showCaptureButton } from './modules/uiManager.js';
-import { handlePlayerClick, clearPlayerSelection, getSelectedPlayers, setGameRecords, setGameData, renderRivalChart, renderTeammateChart } from './modules/playerManager.js';
+import { handlePlayerClick, clearPlayerSelection, selectPlayerFromGlossary, getSelectedPlayers, setGameRecords, setGameData, renderRivalChart, renderTeammateChart } from './modules/playerManager.js';
 import { initializeWinRateSystem, updateWinRateDisplay } from './modules/winRateDisplay.js';
 import { initializePlayerPicker } from './modules/playerPicker.js';
 import { setGameDataForTeamBuilder } from './modules/teamBuilder.js';
@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // 플레이어 클릭 핸들러를 전역으로 노출
             window.handlePlayerClick = handlePlayerClick;
             window.clearPlayerSelection = clearPlayerSelection;
+            window.selectPlayerFromGlossary = selectPlayerFromGlossary;
             window.refreshData = refreshData;
             window.renderRivalChart = renderRivalChart;
             window.renderTeammateChart = renderTeammateChart;

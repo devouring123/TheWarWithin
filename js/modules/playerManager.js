@@ -125,6 +125,21 @@ export function clearPlayerSelection() {
     }, 250);
 }
 
+// 태그 용어집에서 플레이어 선택 (애니메이션 없이 즉시 초기화 후 선택)
+export function selectPlayerFromGlossary(playerName) {
+    // 기존 선택 즉시 초기화 (애니메이션 없이)
+    selectedPlayers.forEach(name => {
+        const card = document.getElementById(`player-card-${name}`);
+        if (card) {
+            card.classList.remove('selected', 'selected-first', 'selected-second');
+        }
+    });
+    selectedPlayers = [];
+
+    // 새 플레이어 선택
+    handlePlayerClick(playerName);
+}
+
 // 상대 전적 차트 렌더링
 export function renderRivalChart(topRivals, bottomRivals) {
     console.log("renderRivalChart called with:", topRivals, bottomRivals);
@@ -1846,8 +1861,8 @@ export function getTagDefinitions() {
             tags: [
                 { text: '[상대] 사냥꾼', icon: 'fa-crosshairs', color: '#10B981', description: '최근 10판 중 특정 상대와 5판 이상, 승률 80% 이상' },
                 { text: '[상대]의 개', icon: 'fa-dog', color: '#8B5CF6', description: '최근 10판 중 특정 상대와 5판 이상, 승률 20% 이하' },
-                { text: '[파트너]와/과 찰떡', icon: 'fa-handshake', color: '#3B82F6', description: '최근 10판 중 특정 플레이어와 같은 팀 5판 이상, 승률 80% 이상' },
-                { text: '[파트너]와/과 상극', icon: 'fa-heart-broken', color: '#EF4444', description: '최근 10판 중 특정 플레이어와 같은 팀 5판 이상, 승률 20% 이하' }
+                { text: '[파트너]와 찰떡', icon: 'fa-handshake', color: '#3B82F6', description: '최근 10판 중 특정 플레이어와 같은 팀 5판 이상, 승률 80% 이상' },
+                { text: '[파트너]와 상극', icon: 'fa-heart-broken', color: '#EF4444', description: '최근 10판 중 특정 플레이어와 같은 팀 5판 이상, 승률 20% 이하' }
             ]
         }
     ];
@@ -1871,8 +1886,8 @@ export function getPlayersWithTags() {
             if (/^\d+연패$/.test(tag.text)) normalizedText = 'N연패';
             if (tag.text.includes('사냥꾼')) normalizedText = '[상대] 사냥꾼';
             if (tag.text.includes('의 개')) normalizedText = '[상대]의 개';
-            if (tag.text.includes('찰떡')) normalizedText = '[파트너]와/과 찰떡';
-            if (tag.text.includes('상극')) normalizedText = '[파트너]와/과 상극';
+            if (tag.text.includes('찰떡')) normalizedText = '[파트너]와 찰떡';
+            if (tag.text.includes('상극')) normalizedText = '[파트너]와 상극';
 
             if (!tagToPlayers[normalizedText]) {
                 tagToPlayers[normalizedText] = [];
@@ -1932,7 +1947,7 @@ export function renderTagGlossary() {
                                                         <div class="tag-players d-flex flex-wrap gap-1">
                                                             ${players.map(p => `
                                                                 <button class="btn btn-sm btn-outline-light tag-player-btn"
-                                                                        onclick="clearPlayerSelection(); handlePlayerClick('${p.name}')"
+                                                                        onclick="window.selectPlayerFromGlossary('${p.name}')"
                                                                         data-tooltip="${p.originalTag}: ${p.title}">
                                                                     ${p.name}
                                                                 </button>
