@@ -1,13 +1,104 @@
 import { getWinrateClass, getPositionName } from './utils.js';
 import { handleTeamWin as handleTeamWinGame, addToGoogleSheetsRecord } from './gameManager.js';
-import { clearPlayerSelection, getRecentFormHtml, getSelectedPlayers } from './playerManager.js';
+import { clearPlayerSelection, getRecentFormHtml, getSelectedPlayers, getPlayerTagsHtml, renderTagGlossary } from './playerManager.js';
 import { setupTeamBuilder, clearTeamSelection, getSelectedTeams, resetToWaitingAreaWithTeams } from './teamBuilder.js';
+import { ToastManager } from './toast.js';
 
 // MVP/ACE 선택 관련 전역 변수
 let selectedMvp = null;
 let selectedAce = null;
 let pendingGameResult = null;
 let pendingWinningTeam = null;
+
+// 로딩 스피너 관리 (HTML의 #loading 요소 사용)
+export const SpinnerManager = {
+    getOverlay: function() {
+        return document.getElementById('loading');
+    },
+    show: function(message = '처리 중...') {
+        const overlay = this.getOverlay();
+        if (!overlay) return;
+
+        // 메시지 업데이트
+        const messageEl = overlay.querySelector('.loading-message');
+        if (messageEl) {
+            messageEl.textContent = message;
+        }
+
+        overlay.style.display = 'flex';
+    },
+    hide: function() {
+        const overlay = this.getOverlay();
+        if (overlay) {
+            overlay.style.display = 'none';
+        }
+    }
+};
+
+// 컴팩트 모드 설정
+let isCompactMode = localStorage.getItem('playerCardCompact') === 'true';
+
+// 컴팩트 모드 토글 함수
+export function toggleCompactMode(gameData) {
+    isCompactMode = !isCompactMode;
+    localStorage.setItem('playerCardCompact', isCompactMode.toString());
+    updateCompactModeButton();
+
+    // 기존 카드들의 클래스 토글 (애니메이션)
+    const cardCols = document.querySelectorAll('.player-card-col');
+    const playerCards = document.querySelectorAll('.player-card');
+
+    cardCols.forEach(col => {
+        if (isCompactMode) {
+            col.classList.remove('detailed-mode');
+            col.classList.add('compact-mode');
+        } else {
+            col.classList.remove('compact-mode');
+            col.classList.add('detailed-mode');
+        }
+    });
+
+    playerCards.forEach(card => {
+        if (isCompactMode) {
+            card.classList.add('player-card-compact');
+        } else {
+            card.classList.remove('player-card-compact');
+        }
+    });
+
+    // 상세 모드로 전환 시 차트 렌더링
+    if (!isCompactMode && gameData?.players) {
+        const sortedPlayers = [...gameData.players].sort((a, b) => a.name.localeCompare(b.name, 'ko-KR'));
+        setTimeout(() => {
+            sortedPlayers.forEach((player, index) => {
+                renderPlayerPositionChart(player, `playerChart${index}`);
+            });
+        }, 100);
+    }
+
+    return isCompactMode;
+}
+
+// 컴팩트 모드 상태 반환
+export function getCompactMode() {
+    return isCompactMode;
+}
+
+// 컴팩트 모드 버튼 UI 업데이트
+function updateCompactModeButton() {
+    const btn = document.getElementById('toggleCardMode');
+    if (btn) {
+        if (isCompactMode) {
+            btn.innerHTML = '<i class="fas fa-expand-alt"></i> 카드 상세';
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-secondary');
+        } else {
+            btn.innerHTML = '<i class="fas fa-compress-alt"></i> 카드 요약';
+            btn.classList.remove('btn-secondary');
+            btn.classList.add('btn-outline-secondary');
+        }
+    }
+}
 
 // 티어별 색상과 첫 글자 매핑 함수
 function getTierInfo(tier) {
@@ -74,9 +165,9 @@ export function renderOverviewStats(gameData) {
 export function renderStatsTable(gameData) {
     const statsTableEl = document.getElementById('statsTable');
     
-    // 5판 이상 플레이한 플레이어만 필터링하고 승률 기준으로 정렬
+    // 10판 이상 플레이한 플레이어만 필터링하고 승률 기준으로 정렬
     const sortedPlayers = [...gameData.players]
-        .filter(player => player.total_wins + player.total_losses >= 5)
+        .filter(player => player.total_wins + player.total_losses >= 10)
         .sort((a, b) => b.overall_winrate - a.overall_winrate);
     
     const headerRow = `
@@ -87,11 +178,11 @@ export function renderStatsTable(gameData) {
                 <th class="text-center">티어</th>
                 <th class="text-center">게임</th>
                 <th class="text-center">승률</th>
-                <th class="text-center">TOP</th>
-                <th class="text-center">JGL</th>
-                <th class="text-center">MID</th>
-                <th class="text-center">ADC</th>
-                <th class="text-center">SUP</th>
+                <th class="text-center"><img src="img/positions/Top.svg" alt="TOP" class="position-header-icon" title="TOP"></th>
+                <th class="text-center"><img src="img/positions/Jug.svg" alt="JGL" class="position-header-icon" title="JGL"></th>
+                <th class="text-center"><img src="img/positions/Mid.svg" alt="MID" class="position-header-icon" title="MID"></th>
+                <th class="text-center"><img src="img/positions/Bot.svg" alt="ADC" class="position-header-icon" title="ADC"></th>
+                <th class="text-center"><img src="img/positions/Sup.svg" alt="SUP" class="position-header-icon" title="SUP"></th>
                 <th class="text-center">승</th>
                 <th class="text-center">패</th>
             </tr>
@@ -182,59 +273,77 @@ export function renderStatsTable(gameData) {
 // 플레이어 목록 렌더링
 export function renderPlayersList(gameData, selectedPlayers, handlePlayerClick) {
     const playersEl = document.getElementById('playersList');
-    
+
     // 가나다 순으로 정렬
     const sortedPlayers = [...gameData.players].sort((a, b) => a.name.localeCompare(b.name, 'ko-KR'));
-    
+
+    // 컴팩트 모드 버튼 업데이트
+    updateCompactModeButton();
+
     playersEl.innerHTML = sortedPlayers.map((player, index) => {
         const winrateClass = getWinrateClass(player.overall_winrate);
         const positions = getPlayerPositions(player);
         const chartId = `playerChart${index}`;
         const recentForm = getRecentFormHtml(player.name);
+        const playerTags = getPlayerTagsHtml(player.name, 2);
 
+        // 통합 카드 - 컴팩트/상세 모드 모두 포함
         return `
-            <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3" onclick="handlePlayerClick('${player.name}')" oncontextmenu="event.preventDefault(); if(document.getElementById('player-card-${player.name}').classList.contains('selected')) { handlePlayerClick('${player.name}'); }">
-                <div class="card player-card h-100" id="player-card-${player.name}">
+            <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 player-card-col ${isCompactMode ? 'compact-mode' : 'detailed-mode'}">
+                <div class="card player-card ${isCompactMode ? 'player-card-compact' : ''}" id="player-card-${player.name}" onclick="handlePlayerClick('${player.name}')" oncontextmenu="event.preventDefault(); if(this.classList.contains('selected')) { handlePlayerClick('${player.name}'); }">
                     <div class="card-body p-2 d-flex flex-column">
-                        <div class="d-flex justify-content-between align-items-start mb-1">
-                            <h6 class="card-title mb-0 fw-bold">
-                                ${player.name}
-                                <span class="ms-1">${getTierBadgeHtml(player.tier)}</span>
-                            </h6>
-                            <span class="winrate-badge ${winrateClass} fs-6">
+                        <!-- 공통 헤더 -->
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <div class="d-flex align-items-center gap-1">
+                                <span class="fw-bold card-title mb-0">${player.name}</span>
+                                ${getTierBadgeHtml(player.tier)}
+                            </div>
+                            <span class="winrate-badge ${winrateClass}" style="font-size: 0.85rem;">
                                 ${(player.overall_winrate * 100).toFixed(1)}%
                             </span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <div>${recentForm}</div>
+
+                        <!-- 공통 폼/게임수 -->
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                ${recentForm}
+                            </div>
                             <small class="text-muted">${player.total_games}게임</small>
                         </div>
-                        
-                        <div class="mb-2">
-                            <div class="row text-center">
-                                <div class="col">
-                                    <small class="text-muted d-block">승</small>
-                                    <strong class="text-success">${player.total_wins}</strong>
-                                </div>
-                                <div class="col">
-                                    <small class="text-muted d-block">패</small>
-                                    <strong class="text-danger">${player.total_losses}</strong>
+
+                        <!-- 태그 -->
+                        <div class="compact-tags">
+                            ${playerTags}
+                        </div>
+
+                        <!-- 상세 정보 (확장 영역) -->
+                        <div class="card-detail-content">
+                            <div class="positions">
+                                <small class="text-muted d-block mb-1">주요 포지션</small>
+                                <div>
+                                    ${positions}
                                 </div>
                             </div>
-                        </div>
-                        
-                        <div class="positions mb-2 flex-grow-1">
-                            <small class="text-muted d-block mb-1">주요 포지션</small>
-                            <div>
-                                ${positions}
+
+                            <div class="mb-2">
+                                <div class="row text-center">
+                                    <div class="col">
+                                        <small class="text-muted d-block">승</small>
+                                        <strong class="text-success">${player.total_wins}</strong>
+                                    </div>
+                                    <div class="col">
+                                        <small class="text-muted d-block">패</small>
+                                        <strong class="text-danger">${player.total_losses}</strong>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        
-                        <!-- 개인 포지션별 승률 차트 -->
-                        <div class="position-chart mt-auto">
-                            <small class="text-muted d-block mb-1">포지션별 승률</small>
-                            <div style="height: 100px; position: relative;">
-                                <canvas id="${chartId}"></canvas>
+
+                            <!-- 개인 포지션별 승률 차트 -->
+                            <div class="position-chart">
+                                <small class="text-muted d-block mb-1">포지션별 승률</small>
+                                <div style="height: 100px; position: relative;">
+                                    <canvas id="${chartId}"></canvas>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -242,33 +351,41 @@ export function renderPlayersList(gameData, selectedPlayers, handlePlayerClick) 
             </div>
         `;
     }).join('');
-    
-    // 각 플레이어의 차트 렌더링
-    setTimeout(() => {
-        sortedPlayers.forEach((player, index) => {
-            renderPlayerPositionChart(player, `playerChart${index}`);
-        });
-    }, 100);
+
+    // 상세 모드일 때만 차트 렌더링
+    if (!isCompactMode) {
+        setTimeout(() => {
+            sortedPlayers.forEach((player, index) => {
+                renderPlayerPositionChart(player, `playerChart${index}`);
+            });
+        }, 100);
+    }
+
+    // 태그 용어집 렌더링
+    const tagGlossaryContainer = document.getElementById('tagGlossaryContainer');
+    if (tagGlossaryContainer) {
+        tagGlossaryContainer.innerHTML = renderTagGlossary();
+    }
 }
 
-// 플레이어의 주요 포지션 반환 (상위 2개만)
+// 플레이어의 주요 포지션 반환 (상위 3개)
 function getPlayerPositions(player) {
-    const positionNames = {
-        top: { name: 'TOP', class: 'pos-top' },
-        jungle: { name: 'JGL', class: 'pos-jungle' },
-        mid: { name: 'MID', class: 'pos-mid' },
-        adc: { name: 'ADC', class: 'pos-adc' },
-        support: { name: 'SUP', class: 'pos-support' }
+    const positionInfo = {
+        top: { name: 'TOP', class: 'pos-top', img: 'img/positions/Top.svg' },
+        jungle: { name: 'JGL', class: 'pos-jungle', img: 'img/positions/Jug.svg' },
+        mid: { name: 'MID', class: 'pos-mid', img: 'img/positions/Mid.svg' },
+        adc: { name: 'ADC', class: 'pos-adc', img: 'img/positions/Bot.svg' },
+        support: { name: 'SUP', class: 'pos-support', img: 'img/positions/Sup.svg' }
     };
 
     return Object.entries(player.positions)
         .filter(([pos, data]) => data.games > 0)
         .sort((a, b) => b[1].games - a[1].games)
-        .slice(0, 2) // 상위 2개만
+        .slice(0, 3) // 상위 3개
         .map(([pos, data]) => {
-            const posInfo = positionNames[pos];
+            const info = positionInfo[pos];
             const winrate = data.games > 0 ? (data.wins / data.games * 100).toFixed(0) : 0;
-            return `<span class="position-badge ${posInfo.class}" title="${posInfo.name}: ${data.games}게임 (${winrate}%)">${posInfo.name}</span>`;
+            return `<span class="position-badge ${info.class}" title="${info.name}: ${data.games}게임 (${winrate}%)"><img src="${info.img}" alt="${info.name}"></span>`;
         }).join('');
 }
 
@@ -370,10 +487,10 @@ export function renderPlayerPositionChart(player, canvasId) {
                         font: {
                             size: 10
                         },
-                        color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#a1a1aa'
+                        color: '#e4e4e7'
                     },
                     grid: {
-                        color: getComputedStyle(document.documentElement).getPropertyValue('--border-subtle').trim() || 'rgba(255, 255, 255, 0.06)'
+                        color: 'rgba(255, 255, 255, 0.1)'
                     }
                 },
                 y: {
@@ -381,10 +498,10 @@ export function renderPlayerPositionChart(player, canvasId) {
                         font: {
                             size: 10
                         },
-                        color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#a1a1aa'
+                        color: '#e4e4e7'
                     },
                     grid: {
-                        color: getComputedStyle(document.documentElement).getPropertyValue('--border-subtle').trim() || 'rgba(255, 255, 255, 0.06)'
+                        color: 'rgba(255, 255, 255, 0.1)'
                     }
                 }
             },
@@ -446,9 +563,9 @@ function renderWinrateChart(gameData) {
     const ctx = document.getElementById('winrateChart').getContext('2d');
     
     const sortedPlayers = [...gameData.players]
-        .filter(player => player.total_wins + player.total_losses >= 5)
+        .filter(player => player.total_wins + player.total_losses >= 10)
         .sort((a, b) => b.overall_winrate - a.overall_winrate);
-    
+
     const originalWinrateData = sortedPlayers.map(p => (p.overall_winrate * 100).toFixed(1));
     const processedWinrateData = originalWinrateData.map(value => {
         const numValue = parseFloat(value);
@@ -487,6 +604,7 @@ function renderWinrateChart(gameData) {
             maintainAspectRatio: false,
             scales: {
                 x: {
+                    position: 'top',
                     beginAtZero: true,
                     max: 100,
                     ticks: {
@@ -566,7 +684,7 @@ export function setupEventListeners() {
                     openMvpModal(gameResult.winners, gameResult, 1);
                 }
             } else {
-                alert('각 팀의 5명 플레이어를 모두 선택해주세요.');
+                ToastManager.warning('각 팀의 5명 플레이어를 모두 선택해주세요.');
             }
         });
     }
@@ -587,7 +705,7 @@ export function setupEventListeners() {
                     openMvpModal(gameResult.winners, gameResult, 2);
                 }
             } else {
-                alert('각 팀의 5명 플레이어를 모두 선택해주세요.');
+                ToastManager.warning('각 팀의 5명 플레이어를 모두 선택해주세요.');
             }
         });
     }
@@ -689,9 +807,16 @@ function openMvpModal(winners, gameResult, winningTeam) {
 // MVP/ACE 선택 후 저장
 async function confirmWinAndSave() {
     if (!selectedMvp || !selectedAce || !pendingGameResult) {
-        alert('MVP와 ACE를 모두 선택해주세요.');
+        ToastManager.warning('MVP와 ACE를 모두 선택해주세요.');
         return;
     }
+
+    // 모달 닫기 (로딩 오버레이 표시 전에)
+    const mvpModal = bootstrap.Modal.getInstance(document.getElementById('mvpModal'));
+    mvpModal.hide();
+
+    // 로딩 오버레이 표시
+    SpinnerManager.show('경기 결과를 저장하는 중...');
 
     try {
         // Google Sheets에 기록 (MVP/ACE 포함)
@@ -714,11 +839,10 @@ async function confirmWinAndSave() {
 
         saveMatchToLocalStorage(matchData);
 
-        // 모달 닫기
-        const mvpModal = bootstrap.Modal.getInstance(document.getElementById('mvpModal'));
-        mvpModal.hide();
+        // 로딩 오버레이 숨기기
+        SpinnerManager.hide();
 
-        alert(`팀 ${pendingWinningTeam} 승리!\nMVP: ${selectedMvp}\nACE: ${selectedAce}`);
+        ToastManager.success(`팀 ${pendingWinningTeam} 승리! MVP: ${selectedMvp}, ACE: ${selectedAce}`);
         resetToWaitingAreaWithTeams();
 
         // 데이터 새로고침 (renderMatchHistory는 refreshData 내에서 호출됨)
@@ -726,7 +850,8 @@ async function confirmWinAndSave() {
 
     } catch (error) {
         console.error('저장 실패:', error);
-        alert('기록 저장에 실패했습니다: ' + error.message);
+        SpinnerManager.hide();
+        ToastManager.error('기록 저장에 실패했습니다: ' + error.message);
     }
 }
 

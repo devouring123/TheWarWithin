@@ -1,7 +1,9 @@
 import CONFIG from './config.js';
 import { updateConfig, updateScriptURL, getConfig } from './config.js';
 import { parseCSVData, parseRecordsCSV } from './dataManager.js';
+import { SpinnerManager } from './uiManager.js';
 import { updateEloAfterGame } from './winRateDisplay.js';
+import { ToastManager } from './toast.js';
 
 let gameData = null;
 let gameRecords = []; // 게임 기록 데이터를 저장할 배열
@@ -58,16 +60,7 @@ function showConfigForm() {
         const queryParams = getQueryParams();
         if (queryParams.spreadsheetId && queryParams.scriptId) {
             // 로딩 화면 표시
-            const loadingEl = document.getElementById('loading');
-            loadingEl.style.display = 'flex';
-            loadingEl.innerHTML = `
-                <div class="text-center">
-                    <div class="spinner-border text-light mb-3" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p class="text-light">시트 정보를 가져오는 중...</p>
-                </div>
-            `;
+            SpinnerManager.show('시트 정보를 가져오는 중...');
 
             try {
                 // Google Apps Script URL 생성
@@ -101,14 +94,7 @@ function showConfigForm() {
                 // 로컬 스토리지에 설정 저장
                 storeConfig(queryParams.spreadsheetId, queryParams.scriptId, sheetGid, recordsGid);
 
-                loadingEl.innerHTML = `
-                    <div class="text-center">
-                        <div class="spinner-border text-light mb-3" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="text-light">URL 파라미터로 설정된 데이터를 불러오는 중...</p>
-                    </div>
-                `;
+                SpinnerManager.show('URL 파라미터로 설정된 데이터를 불러오는 중...');
 
                 resolve();
 
@@ -123,8 +109,7 @@ function showConfigForm() {
         const storedConfig = getStoredConfig();
         if (storedConfig && storedConfig.spreadsheetId && storedConfig.scriptId) {
             // 로딩 화면 표시
-            const loadingEl = document.getElementById('loading');
-            loadingEl.style.display = 'flex';
+            SpinnerManager.show('저장된 설정으로 데이터를 불러오는 중...');
 
             // GID가 있으면 바로 사용, 없으면 자동으로 가져오기
             if (storedConfig.sheetGid && storedConfig.recordsGid) {
@@ -138,28 +123,14 @@ function showConfigForm() {
                 // Google Apps Script URL 업데이트
                 updateScriptURL(storedConfig.scriptId);
 
-                loadingEl.innerHTML = `
-                    <div class="text-center">
-                        <div class="spinner-border text-light mb-3" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="text-light">저장된 설정으로 데이터를 불러오는 중...</p>
-                    </div>
-                `;
+                SpinnerManager.show('저장된 설정으로 데이터를 불러오는 중...');
 
                 resolve();
                 return;
             }
 
             // GID가 없으면 자동으로 가져오기
-            loadingEl.innerHTML = `
-                <div class="text-center">
-                    <div class="spinner-border text-light mb-3" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p class="text-light">시트 정보를 가져오는 중...</p>
-                </div>
-            `;
+            SpinnerManager.show('시트 정보를 가져오는 중...');
 
             try {
                 // Google Apps Script URL 생성
@@ -193,14 +164,7 @@ function showConfigForm() {
                 // 로컬 스토리지에 GID 포함하여 다시 저장
                 storeConfig(storedConfig.spreadsheetId, storedConfig.scriptId, sheetGid, recordsGid);
 
-                loadingEl.innerHTML = `
-                    <div class="text-center">
-                        <div class="spinner-border text-light mb-3" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="text-light">저장된 설정으로 데이터를 불러오는 중...</p>
-                    </div>
-                `;
+                SpinnerManager.show('저장된 설정으로 데이터를 불러오는 중...');
 
                 resolve();
 
@@ -209,13 +173,15 @@ function showConfigForm() {
                 // GID 가져오기 실패 시 설정 폼 표시를 위해 localStorage 클리어
                 localStorage.removeItem('sheetGid');
                 localStorage.removeItem('recordsGid');
+                // 스피너 숨기기
+                SpinnerManager.hide();
                 // 폼 표시로 진행 (아래 코드로 넘어감)
             }
         }
 
         // 저장된 설정이 없거나 불완전하면 입력 폼 표시
         // 기존 로딩 화면 숨기기
-        document.getElementById('loading').style.display = 'none';
+        SpinnerManager.hide();
 
         // 설정 입력 폼 생성 - 다크모드 지원
         const configFormHTML = `
@@ -252,9 +218,9 @@ function showConfigForm() {
             </div>
         `;
 
-        const loadingEl = document.getElementById('loading');
-        loadingEl.style.display = 'flex';
-        loadingEl.innerHTML = configFormHTML;
+        const configContainer = document.getElementById('configContainer');
+        configContainer.style.display = 'flex';
+        configContainer.innerHTML = configFormHTML;
 
         // 계속 버튼 이벤트 리스너
         document.getElementById('continueBtn').addEventListener('click', async function () {
@@ -264,19 +230,13 @@ function showConfigForm() {
 
             // 필수 필드가 입력되었는지 확인
             if (!spreadsheetId || !scriptId) {
-                alert('스프레드시트 ID와 Script ID를 입력해주세요.');
+                ToastManager.warning('스프레드시트 ID와 Script ID를 입력해주세요.');
                 return;
             }
 
-            // 로딩 표시
-            loadingEl.innerHTML = `
-                <div class="text-center">
-                    <div class="spinner-border text-light mb-3" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p class="text-light">시트 정보를 가져오는 중...</p>
-                </div>
-            `;
+            // 설정 폼 숨기고 로딩 표시
+            configContainer.style.display = 'none';
+            SpinnerManager.show('시트 정보를 가져오는 중...');
 
             try {
                 // Google Apps Script URL 생성
@@ -318,26 +278,17 @@ function showConfigForm() {
                     recordsGid: recordsGid
                 });
 
-                loadingEl.innerHTML = `
-                    <div class="text-center">
-                        <div class="spinner-border text-light mb-3" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="text-light">설정을 확인하고 데이터를 불러오는 중...</p>
-                    </div>
-                `;
+                SpinnerManager.show('설정을 확인하고 데이터를 불러오는 중...');
 
                 resolve();
 
             } catch (error) {
                 console.error('GID 가져오기 실패:', error);
-                alert('GID를 자동으로 가져오는데 실패했습니다: ' + error.message);
+                SpinnerManager.hide();
+                ToastManager.error('GID를 자동으로 가져오는데 실패했습니다: ' + error.message);
 
                 // 폼 다시 표시
-                loadingEl.innerHTML = configFormHTML;
-
-                // 이벤트 리스너 다시 등록을 위해 페이지 새로고침
-                location.reload();
+                configContainer.style.display = 'flex';
             }
         });
     });
@@ -359,7 +310,7 @@ export async function loadData(showConfigFormFlag = true) {
             throw new Error('필수 설정 값이 없습니다. 스프레드시트 ID, Google Apps Script URL을 입력해주세요.');
         }
 
-        showLoading('Google Sheets에서 실시간 데이터를 불러오는 중...');
+        SpinnerManager.show('Google Sheets에서 실시간 데이터를 불러오는 중...');
 
         // 캐시 무효화를 위한 타임스탬프
         const cacheBuster = `&_t=${Date.now()}`;
@@ -397,7 +348,7 @@ export async function loadData(showConfigFormFlag = true) {
         } catch (recordsError) {
             console.error('❌ 기록 시트 데이터 로드 실패:', recordsError);
             // 기록 시트 로드 실패는 치명적이지 않으므로 경고만 표시
-            alert('게임 기록 데이터를 불러오는 데 실패했습니다. 플레이어 비교 기능이 제한될 수 있습니다.');
+            ToastManager.warning('게임 기록 데이터를 불러오는 데 실패했습니다. 플레이어 비교 기능이 제한될 수 있습니다.');
         }
 
         return { gameData, gameRecords };
@@ -497,7 +448,7 @@ export function handleTeamWin(winningTeam, team1InputValue, team2InputValue) {
     const team2Input = team2InputValue.trim();
 
     if (!team1Input || !team2Input) {
-        alert('두 팀의 플레이어를 모두 입력해주세요.');
+        ToastManager.warning('두 팀의 플레이어를 모두 입력해주세요.');
         return null;
     }
 
@@ -506,12 +457,12 @@ export function handleTeamWin(winningTeam, team1InputValue, team2InputValue) {
         const team2Players = parseTeamInput(team2Input);
 
         if (team1Players.length !== 5) {
-            alert(`팀 1에 정확히 5명의 플레이어가 필요합니다. 현재 ${team1Players.length}명 입력되었습니다.`);
+            ToastManager.warning(`팀 1에 정확히 5명의 플레이어가 필요합니다. 현재 ${team1Players.length}명 입력되었습니다.`);
             return null;
         }
 
         if (team2Players.length !== 5) {
-            alert(`팀 2에 정확히 5명의 플레이어가 필요합니다. 현재 ${team2Players.length}명 입력되었습니다.`);
+            ToastManager.warning(`팀 2에 정확히 5명의 플레이어가 필요합니다. 현재 ${team2Players.length}명 입력되었습니다.`);
             return null;
         }
 
@@ -532,7 +483,7 @@ export function handleTeamWin(winningTeam, team1InputValue, team2InputValue) {
         return gameResult;
 
     } catch (error) {
-        alert('입력 데이터를 처리하는 중 오류가 발생했습니다: ' + error.message);
+        ToastManager.error('입력 데이터를 처리하는 중 오류가 발생했습니다: ' + error.message);
         return null;
     }
 }
@@ -547,38 +498,22 @@ function parseTeamInput(input) {
     return names;
 }
 
-// 로딩 화면 표시
-function showLoading(message = '데이터를 불러오는 중...') {
-    const loadingEl = document.getElementById('loading');
-    loadingEl.style.display = 'flex';
-    loadingEl.innerHTML = `
-        <div class="text-center">
-            <div class="spinner-border text-light mb-3" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <p class="text-light">${message}</p>
-        </div>
-    `;
-
-    document.getElementById('content').style.display = 'none';
-}
-
 // 로딩 화면 숨기기
 export function hideLoading() {
-    document.getElementById('loading').style.display = 'none';
+    SpinnerManager.hide();
     document.getElementById('content').style.display = 'block';
 }
 
 // 오류 표시
 export function showError(message) {
-    const loadingEl = document.getElementById('loading');
-    loadingEl.style.display = 'flex';
+    SpinnerManager.hide();
+    const configContainer = document.getElementById('configContainer');
 
     // 현재 설정된 스프레드시트 ID 가져오기
     const currentConfig = getConfig();
     const sheetId = currentConfig.SPREADSHEET_ID || 'YOUR_SHEET_ID';
 
-    loadingEl.innerHTML = `
+    configContainer.innerHTML = `
         <div class="card text-center" style="max-width: 700px; margin: 0 auto; background: var(--bg-secondary, #ffffff); border: 1px solid var(--border-subtle, rgba(0,0,0,0.1));">
             <div class="card-body" style="color: var(--text-primary, #212529);">
                 <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
@@ -608,4 +543,5 @@ export function showError(message) {
             </div>
         </div>
     `;
+    configContainer.style.display = 'flex';
 }

@@ -1,11 +1,13 @@
 // 모듈 임포트
-import { setupEventListeners } from './modules/uiManager.js';
-import { loadData, hideLoading, showError } from './modules/gameManager.js';
+import { setupEventListeners, toggleCompactMode, SpinnerManager } from './modules/uiManager.js';
+import { loadData, showError, hideLoading } from './modules/gameManager.js';
 import { renderOverviewStats, renderStatsTable, renderPlayersList, renderCharts, updateLastUpdated, renderMatchHistory, showCaptureButton } from './modules/uiManager.js';
-import { handlePlayerClick, clearPlayerSelection, getSelectedPlayers, setGameRecords, setGameData, renderRivalChart, renderTeammateChart } from './modules/playerManager.js';
+import { handlePlayerClick, clearPlayerSelection, selectPlayerFromGlossary, getSelectedPlayers, setGameRecords, setGameData, renderRivalChart, renderTeammateChart } from './modules/playerManager.js';
 import { initializeWinRateSystem, updateWinRateDisplay } from './modules/winRateDisplay.js';
 import { initializePlayerPicker } from './modules/playerPicker.js';
 import { setGameDataForTeamBuilder } from './modules/teamBuilder.js';
+import { ToastManager, showSuccess, showError as showToastError, showWarning, showInfo, initTooltips } from './modules/toast.js';
+import { initializeShortcuts, showShortcutsHelp, toggleTheme } from './modules/shortcuts.js';
 
 // 전역 변수
 let gameData = null;
@@ -23,10 +25,35 @@ document.addEventListener('DOMContentLoaded', function () {
             // 플레이어 클릭 핸들러를 전역으로 노출
             window.handlePlayerClick = handlePlayerClick;
             window.clearPlayerSelection = clearPlayerSelection;
+            window.selectPlayerFromGlossary = selectPlayerFromGlossary;
             window.refreshData = refreshData;
             window.renderRivalChart = renderRivalChart;
             window.renderTeammateChart = renderTeammateChart;
             window.addPlayerToInput = window.addPlayerToInput; // playerPicker에서 설정됨
+
+            // 컴팩트 모드 토글 버튼 이벤트 리스너
+            const toggleCardModeBtn = document.getElementById('toggleCardMode');
+            if (toggleCardModeBtn) {
+                toggleCardModeBtn.addEventListener('click', () => {
+                    toggleCompactMode(gameData);
+                });
+            }
+
+            // 토스트 알림 시스템 전역 노출
+            window.ToastManager = ToastManager;
+            window.showToast = ToastManager.show.bind(ToastManager);
+            window.showSuccess = showSuccess;
+            window.showError = showToastError;
+            window.showWarning = showWarning;
+            window.showInfo = showInfo;
+
+            // 키보드 단축키 초기화 및 전역 노출
+            initializeShortcuts();
+            window.toggleTheme = toggleTheme;
+            window.showShortcutsHelp = showShortcutsHelp;
+
+            // 툴팁 시스템 초기화
+            initTooltips();
         }
     }, 100);
 });

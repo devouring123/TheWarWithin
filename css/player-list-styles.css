@@ -1,4 +1,5 @@
 /* 플레이어 목록 스타일 개선 - Dark/Light Mode */
+
 .player-card .card-title {
     font-size: 1.1rem !important;
     font-weight: 600 !important;
@@ -18,7 +19,7 @@
 
 .player-card .positions small,
 .player-card .position-chart small {
-    color: var(--text-secondary, #a1a1aa) !important;
+    color: #d4d4d8 !important;
 }
 
 /* 라이트 모드 플레이어 카드 */
@@ -52,18 +53,48 @@
     }
 }
 
+/* 통계표 헤더 포지션 아이콘 */
+.position-header-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    filter: brightness(1.2);
+}
+
 /* 포지션 배지 스타일 */
 .position-badge {
-    display: inline-block;
-    padding: 5px 12px;
-    margin: 3px;
-    border-radius: 12px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: white;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    margin: 2px;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.position-badge img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    filter: brightness(1.2);
+}
+
+.positions > div {
+    display: flex;
+    justify-content: space-evenly;
+    gap: 2px;
+}
+
+/* 포지션별 승률 차트 간격 줄이기 */
+.position-chart {
+    margin-top: 4px;
+}
+
+/* 주요 포지션 간격 줄이기 */
+.positions {
+    margin-bottom: 4px;
 }
 
 .position-badge:hover {
@@ -237,5 +268,1027 @@
     }
     50% {
         box-shadow: 0 2px 16px rgba(245, 158, 11, 0.8);
+    }
+}
+
+/* ============================================
+   플레이어 태그 스타일 - Dark/Light Mode 지원
+   ============================================ */
+
+/* 태그 컨테이너 */
+.player-tags {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+    min-height: 24px;
+    margin-top: 0.5rem;
+    margin-bottom: 3px;
+    overflow: visible;
+    position: relative;
+}
+
+/* 기본 태그 스타일 (다크 모드 기본) */
+.player-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 0.6rem;
+    line-height: 1.3;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    position: relative;
+}
+
+.player-tag:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.1);
+}
+
+/* 태그 커스텀 툴팁 - JavaScript TooltipManager로 대체됨 */
+/* CSS pseudo-element 툴팁 제거 - 동적 위치 계산을 위해 JS 사용 */
+
+/* 큰 태그 스타일 (상세 정보용) - 요약카드와 동일 크기 */
+.player-tag-large {
+    padding: 1px 5px;
+    font-size: 0.6rem;
+}
+
+.player-tag-large i {
+    font-size: 0.5rem;
+}
+
+/* 태그 섹션 스타일 */
+.player-tags-section {
+    background: var(--bg-secondary, rgba(30, 30, 35, 0.5));
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
+    overflow: visible;
+}
+
+.player-tags-section h5 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--text-primary, #fafafa);
+}
+
+.player-tags-all {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+    min-height: 32px;
+    overflow: visible;
+}
+
+/* 전적 분석 태그는 원래 크기로 */
+.player-tags-all .player-tag {
+    padding: 2px 8px;
+    font-size: 0.75rem;
+}
+
+.player-tags-all .player-tag i {
+    font-size: 0.65rem;
+    margin-right: 3px;
+}
+
+/* 라이트 모드 태그 섹션 */
+[data-theme="light"] .player-tags-section {
+    background: rgba(241, 245, 249, 0.8);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .player-tags-section h5 {
+    color: var(--text-primary, #0f172a);
+}
+
+@media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) .player-tags-section {
+        background: rgba(241, 245, 249, 0.8);
+        border-color: rgba(0, 0, 0, 0.1);
+    }
+
+    :root:not([data-theme="dark"]) .player-tags-section h5 {
+        color: var(--text-primary, #0f172a);
+    }
+}
+
+.player-tag i {
+    font-size: 0.5rem;
+    margin-right: 2px;
+}
+
+/* 특별 태그 애니메이션 - 불타는 중 (연승) */
+.player-tag.tag-fire {
+    animation: tag-pulse-fire 1.5s ease-in-out infinite;
+}
+
+@keyframes tag-pulse-fire {
+    0%, 100% {
+        box-shadow: 0 0 4px rgba(239, 68, 68, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 12px rgba(239, 68, 68, 0.7);
+    }
+}
+
+/* 특별 태그 애니메이션 - 냉동실행 (연패) */
+.player-tag.tag-cold {
+    animation: tag-pulse-cold 2s ease-in-out infinite;
+}
+
+@keyframes tag-pulse-cold {
+    0%, 100% {
+        box-shadow: 0 0 4px rgba(59, 130, 246, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 10px rgba(59, 130, 246, 0.6);
+    }
+}
+
+/* 특별 태그 애니메이션 - MVP 수집가 */
+.player-tag.tag-mvp {
+    animation: tag-shine 2.5s ease-in-out infinite;
+}
+
+@keyframes tag-shine {
+    0%, 100% {
+        filter: brightness(1);
+    }
+    50% {
+        filter: brightness(1.2);
+    }
+}
+
+/* 라이트 모드 태그 스타일 */
+[data-theme="light"] .player-tag {
+    backdrop-filter: blur(2px);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .player-tag:hover {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* 시스템 라이트 모드 */
+@media (prefers-color-scheme: light) {
+    :root:not([data-theme]) .player-tag {
+        backdrop-filter: blur(2px);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    :root:not([data-theme]) .player-tag:hover {
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    }
+}
+
+/* 반응형 태그 스타일 */
+@media (max-width: 576px) {
+    .player-tag {
+        padding: 1px 6px;
+        font-size: 0.6rem;
+    }
+
+    .player-tag i {
+        font-size: 0.55rem;
+    }
+
+    .player-tags {
+        min-height: 20px;
+    }
+}
+
+/* 태그가 너무 많을 때 오버플로우 처리 */
+.player-tags-overflow {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ============================================
+   포지션 태그 미니 (팀 빌더용) - player-tag 스타일 통합
+   ============================================ */
+
+/* 팀 빌더 포지션 태그 미니 버전 */
+.position-tag-mini {
+    padding: 1px 6px !important;
+    font-size: 0.65rem !important;
+    margin-right: 4px;
+    vertical-align: middle;
+}
+
+.position-tag-mini i {
+    font-size: 0.55rem;
+}
+
+/* 팀 슬롯 내 태그 정렬 */
+.position-slot .position-tag-mini {
+    display: inline-flex;
+    align-items: center;
+}
+
+/* ============================================
+   플레이어 카드 컴팩트 모드 - Dark/Light Mode 지원
+   ============================================ */
+
+/* 카드 확장/축소 애니메이션 */
+.card-detail-content {
+    max-height: 500px;
+    opacity: 1;
+    overflow: hidden;
+    transition: max-height 0.3s ease-in-out, opacity 0.25s ease-in-out, margin 0.2s ease-in-out;
+    margin-top: 8px;
+}
+
+.compact-mode .card-detail-content {
+    max-height: 0;
+    opacity: 0;
+    margin-top: 0;
+}
+
+.player-card-col {
+    transition: margin-bottom 0.2s ease-in-out;
+}
+
+.player-card-col.detailed-mode {
+    margin-bottom: 0;
+}
+
+.player-card-col.compact-mode {
+    margin-bottom: 0;
+}
+
+/* 컴팩트 카드 기본 스타일 (다크 모드) */
+.player-card-compact {
+    transition: all 0.2s ease;
+}
+
+/* 컴팩트 모드 호버 효과 */
+.player-card-compact:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.player-card-compact:hover .fa-chevron-down {
+    color: var(--accent-primary, #8b5cf6) !important;
+}
+
+/* 컴팩트 모드 선택 상태 */
+.player-card-compact.selected-first,
+.player-card-compact.selected-second {
+    transform: translateY(-2px);
+}
+
+/* 라이트 모드 컴팩트 카드 */
+[data-theme="light"] .player-card-compact:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 시스템 라이트 모드 */
+@media (prefers-color-scheme: light) {
+    :root:not([data-theme]) .player-card-compact:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+}
+
+/* 플레이어 목록 row 패딩 줄이기 */
+#playersList {
+    --bs-gutter-x: 8px;
+}
+
+#playersList > div {
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+}
+
+/* 컴팩트 카드 열 간격 */
+.compact-card-col {
+    margin-bottom: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+/* 컴팩트 카드 태그 스타일 */
+.compact-tags {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+}
+
+.compact-tags .no-tags {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(128, 128, 128, 0.15) !important;
+    color: #888 !important;
+    border: 1px solid rgba(128, 128, 128, 0.2) !important;
+    cursor: default;
+    position: relative;
+}
+
+.compact-tags .no-tags:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    white-space: nowrap;
+    z-index: 1000;
+    margin-bottom: 4px;
+}
+
+/* 컴팩트 모드 반응형 */
+@media (max-width: 576px) {
+    .player-card-compact .card-title {
+        font-size: 0.9rem !important;
+    }
+}
+
+/* 컴팩트 카드 하단 여백 제거 */
+.player-card-compact {
+    height: auto !important;
+}
+
+/* 토글 버튼 컨테이너 */
+.card-controls {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.card-controls .btn {
+    transition: all 0.2s ease;
+}
+
+.card-controls .btn:hover {
+    transform: translateY(-1px);
+}
+
+/* ============================================
+   토스트 알림 시스템 - Dark/Light Mode 지원
+   ============================================ */
+
+/* 토스트 컨테이너 */
+#toastContainer {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+
+/* 토스트 기본 스타일 (다크 모드) */
+.toast-notification {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border-radius: 10px;
+    background: var(--bg-elevated, #1f2937);
+    border: 1px solid var(--border-subtle, #374151);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    color: var(--text-primary, #f3f4f6);
+    font-size: 0.9rem;
+    min-width: 280px;
+    max-width: 400px;
+    transform: translateX(120%);
+    opacity: 0;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.2s ease;
+    pointer-events: auto;
+}
+
+.toast-notification.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.toast-notification.hiding {
+    transform: translateX(120%);
+    opacity: 0;
+}
+
+/* 토스트 아이콘 */
+.toast-icon {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+/* 토스트 메시지 */
+.toast-message {
+    flex: 1;
+    word-break: keep-all;
+}
+
+/* 토스트 닫기 버튼 */
+.toast-close {
+    background: none;
+    border: none;
+    color: var(--text-muted, #9ca3af);
+    cursor: pointer;
+    padding: 4px;
+    margin: -4px;
+    border-radius: 4px;
+    transition: color 0.2s ease, background 0.2s ease;
+    flex-shrink: 0;
+}
+
+.toast-close:hover {
+    color: var(--text-primary, #f3f4f6);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* 토스트 유형별 스타일 */
+.toast-success {
+    border-left: 4px solid #10B981;
+}
+
+.toast-success .toast-icon {
+    color: #10B981;
+}
+
+.toast-error {
+    border-left: 4px solid #EF4444;
+}
+
+.toast-error .toast-icon {
+    color: #EF4444;
+}
+
+.toast-warning {
+    border-left: 4px solid #F59E0B;
+}
+
+.toast-warning .toast-icon {
+    color: #F59E0B;
+}
+
+.toast-info {
+    border-left: 4px solid #3B82F6;
+}
+
+.toast-info .toast-icon {
+    color: #3B82F6;
+}
+
+/* 라이트 모드 토스트 */
+[data-theme="light"] .toast-notification {
+    background: #ffffff;
+    border-color: #e5e7eb;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    color: #1f2937;
+}
+
+[data-theme="light"] .toast-close {
+    color: #6b7280;
+}
+
+[data-theme="light"] .toast-close:hover {
+    color: #1f2937;
+    background: rgba(0, 0, 0, 0.05);
+}
+
+/* 시스템 라이트 모드 */
+@media (prefers-color-scheme: light) {
+    :root:not([data-theme]) .toast-notification {
+        background: #ffffff;
+        border-color: #e5e7eb;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        color: #1f2937;
+    }
+
+    :root:not([data-theme]) .toast-close {
+        color: #6b7280;
+    }
+
+    :root:not([data-theme]) .toast-close:hover {
+        color: #1f2937;
+        background: rgba(0, 0, 0, 0.05);
+    }
+}
+
+/* 토스트 반응형 */
+@media (max-width: 576px) {
+    #toastContainer {
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+    }
+
+    .toast-notification {
+        min-width: auto;
+        max-width: none;
+        font-size: 0.85rem;
+        padding: 12px 14px;
+    }
+}
+
+/* ============================================
+   키보드 단축키 도움말 모달 - Dark/Light Mode 지원
+   ============================================ */
+
+/* 모달 컨테이너 */
+.shortcuts-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.shortcuts-modal.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* 모달 배경 */
+.shortcuts-modal-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+}
+
+/* 모달 콘텐츠 (다크 모드) */
+.shortcuts-modal-content {
+    position: relative;
+    background: var(--bg-elevated, #1f2937);
+    border: 1px solid var(--border-subtle, #374151);
+    border-radius: 16px;
+    padding: 24px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    transform: scale(0.95) translateY(10px);
+    transition: transform 0.2s ease;
+    color: var(--text-primary, #f3f4f6);
+}
+
+.shortcuts-modal.show .shortcuts-modal-content {
+    transform: scale(1) translateY(0);
+}
+
+/* 닫기 버튼 */
+.shortcuts-modal-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: none;
+    border: none;
+    color: var(--text-muted, #9ca3af);
+    font-size: 1.25rem;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    transition: color 0.2s ease, background 0.2s ease;
+}
+
+.shortcuts-modal-close:hover {
+    color: var(--text-primary, #f3f4f6);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* 도움말 그리드 */
+.shortcuts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 20px;
+}
+
+.shortcut-category h6 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+}
+
+.shortcut-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.85rem;
+    padding: 4px 0;
+    color: var(--text-secondary, #d1d5db);
+}
+
+/* 키보드 키 스타일 */
+.shortcut-item kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 24px;
+    padding: 0 8px;
+    background: var(--bg-secondary, #374151);
+    border: 1px solid var(--border-subtle, #4b5563);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-primary, #f3f4f6);
+    box-shadow: 0 2px 0 var(--border-subtle, #4b5563);
+}
+
+/* 라이트 모드 단축키 모달 */
+[data-theme="light"] .shortcuts-modal-backdrop {
+    background: rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="light"] .shortcuts-modal-content {
+    background: #ffffff;
+    border-color: #e5e7eb;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    color: #1f2937;
+}
+
+[data-theme="light"] .shortcuts-modal-close {
+    color: #6b7280;
+}
+
+[data-theme="light"] .shortcuts-modal-close:hover {
+    color: #1f2937;
+    background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .shortcut-item {
+    color: #4b5563;
+}
+
+[data-theme="light"] .shortcut-item kbd {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+    color: #1f2937;
+    box-shadow: 0 2px 0 #d1d5db;
+}
+
+/* 시스템 라이트 모드 */
+@media (prefers-color-scheme: light) {
+    :root:not([data-theme]) .shortcuts-modal-backdrop {
+        background: rgba(0, 0, 0, 0.4);
+    }
+
+    :root:not([data-theme]) .shortcuts-modal-content {
+        background: #ffffff;
+        border-color: #e5e7eb;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+        color: #1f2937;
+    }
+
+    :root:not([data-theme]) .shortcuts-modal-close {
+        color: #6b7280;
+    }
+
+    :root:not([data-theme]) .shortcuts-modal-close:hover {
+        color: #1f2937;
+        background: rgba(0, 0, 0, 0.05);
+    }
+
+    :root:not([data-theme]) .shortcut-item {
+        color: #4b5563;
+    }
+
+    :root:not([data-theme]) .shortcut-item kbd {
+        background: #f3f4f6;
+        border-color: #d1d5db;
+        color: #1f2937;
+        box-shadow: 0 2px 0 #d1d5db;
+    }
+}
+
+/* 단축키 모달 반응형 */
+@media (max-width: 576px) {
+    .shortcuts-modal-content {
+        padding: 20px;
+    }
+
+    .shortcuts-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .shortcuts-help h5 {
+        font-size: 1rem;
+    }
+}
+
+/* ===== 로딩 오버레이 스타일 ===== */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(10, 10, 11, 0.9);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.loading-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.loading-overlay-content {
+    text-align: center;
+    padding: 40px;
+}
+
+/* 스피너 애니메이션 */
+.loading-spinner {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 24px;
+}
+
+.spinner-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 3px solid transparent;
+}
+
+.spinner-ring:nth-child(1) {
+    border-top-color: #8b5cf6;
+    animation: spin 1.2s linear infinite;
+}
+
+.spinner-ring:nth-child(2) {
+    border-right-color: #a78bfa;
+    animation: spin 1.2s linear infinite 0.15s;
+    width: 70%;
+    height: 70%;
+    top: 15%;
+    left: 15%;
+}
+
+.spinner-ring:nth-child(3) {
+    border-bottom-color: #c4b5fd;
+    animation: spin 1.2s linear infinite 0.3s;
+    width: 40%;
+    height: 40%;
+    top: 30%;
+    left: 30%;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.loading-message {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #fafafa;
+    margin-bottom: 8px;
+}
+
+.loading-submessage {
+    font-size: 0.875rem;
+    color: #a1a1aa;
+    margin: 0;
+}
+
+/* 로딩 오버레이 라이트 모드 */
+[data-theme="light"] .loading-overlay {
+    background: rgba(255, 255, 255, 0.95);
+}
+
+[data-theme="light"] .loading-message {
+    color: #0f172a;
+}
+
+[data-theme="light"] .loading-submessage {
+    color: #64748b;
+}
+
+@media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) .loading-overlay {
+        background: rgba(255, 255, 255, 0.95);
+    }
+
+    :root:not([data-theme="dark"]) .loading-message {
+        color: #0f172a;
+    }
+
+    :root:not([data-theme="dark"]) .loading-submessage {
+        color: #64748b;
+    }
+}
+
+/* ============================================
+   태그 용어집 스타일 - Dark/Light Mode 지원
+   ============================================ */
+
+/* 태그 용어집 기본 스타일 */
+.tag-glossary {
+    border-radius: 12px;
+}
+
+.tag-glossary .card-title {
+    font-size: 1.1rem;
+    color: var(--text-primary, #fafafa);
+}
+
+/* 아코디언 스타일 */
+.tag-glossary .accordion-button {
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 12px 16px;
+}
+
+.tag-glossary .accordion-button:focus {
+    box-shadow: none;
+    border-color: var(--accent-primary, #8b5cf6);
+}
+
+.tag-glossary .accordion-button:not(.collapsed) {
+    background: var(--bg-tertiary, rgba(40, 40, 45, 0.9));
+    color: var(--accent-primary, #8b5cf6);
+}
+
+.tag-glossary .accordion-button::after {
+    filter: var(--btn-close-filter, invert(1));
+    margin-left: 4px;
+}
+
+.tag-glossary .accordion-button .badge {
+    margin-right: 4px;
+}
+
+/* 태그 용어집 아이템 */
+.tag-glossary-item {
+    transition: background 0.2s ease;
+}
+
+.tag-glossary-item:hover {
+    background: var(--bg-elevated, rgba(50, 50, 55, 0.6)) !important;
+}
+
+/* 태그 용어집 내 태그 크기 */
+.tag-glossary .player-tag {
+    padding: 4px 12px;
+    font-size: 0.875rem;
+}
+
+/* 플레이어 버튼 */
+.tag-player-btn {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background: var(--bg-tertiary, rgba(40, 40, 45, 0.8));
+    border-color: var(--border-subtle, rgba(255, 255, 255, 0.1));
+    color: var(--text-primary, #fafafa);
+    transition: all 0.2s ease;
+}
+
+.tag-player-btn:hover {
+    background: var(--accent-primary, #8b5cf6);
+    border-color: var(--accent-primary, #8b5cf6);
+    color: white;
+    transform: translateY(-1px);
+}
+
+/* 라이트 모드 태그 용어집 */
+[data-theme="light"] .tag-glossary {
+    background: rgba(241, 245, 249, 0.9) !important;
+    border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-theme="light"] .tag-glossary .card-title {
+    color: var(--text-primary, #0f172a);
+}
+
+[data-theme="light"] .tag-glossary .accordion-button {
+    background: #f1f5f9;
+    color: var(--text-primary, #0f172a);
+}
+
+[data-theme="light"] .tag-glossary .accordion-button:not(.collapsed) {
+    background: #e2e8f0;
+    color: var(--accent-primary, #8b5cf6);
+}
+
+[data-theme="light"] .tag-glossary .accordion-button::after {
+    filter: none;
+}
+
+[data-theme="light"] .tag-glossary .accordion-body {
+    background: #f8fafc !important;
+}
+
+[data-theme="light"] .tag-glossary-item {
+    background: #ffffff !important;
+}
+
+[data-theme="light"] .tag-glossary-item:hover {
+    background: #f1f5f9 !important;
+}
+
+[data-theme="light"] .tag-player-btn {
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+    color: #0f172a;
+}
+
+/* 시스템 라이트 모드 */
+@media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) .tag-glossary {
+        background: rgba(241, 245, 249, 0.9) !important;
+        border-color: rgba(0, 0, 0, 0.1) !important;
+    }
+
+    :root:not([data-theme="dark"]) .tag-glossary .card-title {
+        color: var(--text-primary, #0f172a);
+    }
+
+    :root:not([data-theme="dark"]) .tag-glossary .accordion-button {
+        background: #f1f5f9;
+        color: var(--text-primary, #0f172a);
+    }
+
+    :root:not([data-theme="dark"]) .tag-glossary .accordion-button:not(.collapsed) {
+        background: #e2e8f0;
+        color: var(--accent-primary, #8b5cf6);
+    }
+
+    :root:not([data-theme="dark"]) .tag-glossary .accordion-button::after {
+        filter: none;
+    }
+
+    :root:not([data-theme="dark"]) .tag-glossary .accordion-body {
+        background: #f8fafc !important;
+    }
+
+    :root:not([data-theme="dark"]) .tag-glossary-item {
+        background: #ffffff !important;
+    }
+
+    :root:not([data-theme="dark"]) .tag-glossary-item:hover {
+        background: #f1f5f9 !important;
+    }
+
+    :root:not([data-theme="dark"]) .tag-player-btn {
+        background: #f1f5f9;
+        border-color: #e2e8f0;
+        color: #0f172a;
+    }
+}
+
+/* 태그 용어집 반응형 */
+@media (max-width: 576px) {
+    .tag-glossary .card-body {
+        padding: 12px;
+    }
+
+    .tag-glossary .accordion-button {
+        font-size: 0.85rem;
+        padding: 10px 12px;
+    }
+
+    .tag-glossary-item {
+        padding: 10px !important;
+    }
+
+    .tag-player-btn {
+        font-size: 0.7rem;
+        padding: 1px 6px;
     }
 }
