@@ -1,4 +1,4 @@
-import { getPositionName, getPositionIndex } from './utils.js';
+import { getPositionName, getPositionIndex, getParticle } from './utils.js';
 import { getTierBadgeHtml } from './uiManager.js';
 
 let selectedPlayers = []; // 선택된 플레이어를 저장할 배열
@@ -679,7 +679,11 @@ function renderComparePlayerDetails(player1Name, player2Name) {
                 <p>${player2.total_wins}승 ${player2.total_losses}패 (${(player2.overall_winrate * 100).toFixed(1)}%)</p>
             </div>
         </div>
-        ${synergyBadges ? `<div class="text-center mb-3">${synergyBadges}</div>` : ''}
+
+        <div class="player-tags-section mb-4">
+            <h5><i class="fas fa-tags me-2"></i>획득 태그</h5>
+            ${synergyBadges || '<p class="text-muted mb-0">획득한 태그가 없습니다</p>'}
+        </div>
         ${showDetailedStats ? `
         <hr>
         <h5>상대 전적 (적으로 만났을 때):</h5>
@@ -1031,6 +1035,13 @@ export function getSynergyBadgeHtml(player1Name, player2Name, isSinglePlayer = f
     const synergy = calculateSynergy(player1Name, player2Name);
     const badges = [];
 
+    // 태그 생성 헬퍼 함수
+    const createTag = (icon, text, color, tooltip) => {
+        return `<span class="player-tag player-tag-large" style="background: ${color}20; color: ${color}; border: 1px solid ${color}40;" data-tooltip="${tooltip}">
+            <i class="fas ${icon} me-1"></i>${text}
+        </span>`;
+    };
+
     // 플레이어 개인 승률 가져오기
     const player1 = gameData?.players?.find(p => p.name.toLowerCase() === player1Name.toLowerCase());
     const player2 = gameData?.players?.find(p => p.name.toLowerCase() === player2Name.toLowerCase());
@@ -1046,49 +1057,51 @@ export function getSynergyBadgeHtml(player1Name, player2Name, isSinglePlayer = f
 
     // 영혼의 듀오: 같은 팀 승률 65% 이상, 최소 5경기 이상
     if (synergy.sameTeamGames >= 5 && synergy.sameTeamWinRate >= 65) {
-        badges.push(`<span class="synergy-badge duo" title="같은 팀 승률 65% 이상"><i class="fas fa-bolt me-1"></i>영혼의 듀오</span>`);
+        badges.push(createTag('fa-bolt', '영혼의 듀오', '#F59E0B', '같은 팀 승률 65% 이상'));
     }
     // 합쳐서 3인분: 둘 다 개인 승률 50% 미만인데 뭉치면 60% 이상
     if (synergy.sameTeamGames >= 5 && p1WinRate < 50 && p2WinRate < 50 && synergy.sameTeamWinRate >= 60) {
-        badges.push(`<span class="synergy-badge synergy-boost" title="각자 승률 50% 미만, 같은 팀 승률 60% 이상"><i class="fas fa-hand-holding-heart me-1"></i>합쳐서 3인분</span>`);
+        badges.push(createTag('fa-hand-holding-heart', '합쳐서 3인분', '#EC4899', '각자 승률 50% 미만, 같은 팀 승률 60% 이상'));
     }
     // 패트와 매트: 같은 팀 승률 35% 이하, 최소 5경기 이상
     if (synergy.sameTeamGames >= 5 && synergy.sameTeamWinRate <= 35) {
-        badges.push(`<span class="synergy-badge bad-duo" title="같은 팀 승률 35% 이하"><i class="fas fa-tools me-1"></i>패트와 매트</span>`);
+        badges.push(createTag('fa-tools', '패트와 매트', '#6B7280', '같은 팀 승률 35% 이하'));
     }
     // 불협화음: 둘 다 개인 승률 50% 초과인데 뭉치면 40% 이하
     if (synergy.sameTeamGames >= 5 && p1WinRate > 50 && p2WinRate > 50 && synergy.sameTeamWinRate <= 40) {
-        badges.push(`<span class="synergy-badge inhibitor" title="각자 승률 50% 초과, 같은 팀 승률 40% 이하"><i class="fas fa-unlink me-1"></i>불협화음</span>`);
+        badges.push(createTag('fa-unlink', '불협화음', '#EF4444', '각자 승률 50% 초과, 같은 팀 승률 40% 이하'));
     }
 
     // === 상대 팀 관련 태그 ===
 
     // 먹잇감: 상대 팀 승률 35% 이하, 최소 5경기 이상
     if (synergy.vsGames >= 5 && synergy.vsWinRate <= 35) {
-        badges.push(`<span class="synergy-badge nemesis" title="상대 시 승률 35% 이하"><i class="fas fa-skull me-1"></i>먹잇감</span>`);
+        badges.push(createTag('fa-skull', '먹잇감', '#8B5CF6', '상대 시 승률 35% 이하'));
     }
     // 사냥꾼: 상대 팀 승률 65% 이상, 최소 5경기 이상
     else if (synergy.vsGames >= 5 && synergy.vsWinRate >= 65) {
-        badges.push(`<span class="synergy-badge prey" title="상대 시 승률 65% 이상"><i class="fas fa-crosshairs me-1"></i>사냥꾼</span>`);
+        badges.push(createTag('fa-crosshairs', '사냥꾼', '#10B981', '상대 시 승률 65% 이상'));
     }
     // 자강두천: 상대 팀 승률 45% ~ 55% 사이, 최소 5경기 이상
     else if (synergy.vsGames >= 5 && synergy.vsWinRate >= 45 && synergy.vsWinRate <= 55) {
-        badges.push(`<span class="synergy-badge rival" title="상대 시 승률 45%~55%"><i class="fas fa-balance-scale me-1"></i>자강두천</span>`);
+        badges.push(createTag('fa-balance-scale', '자강두천', '#3B82F6', '상대 시 승률 45%~55%'));
     }
 
     // === 매칭 빈도 관련 태그 ===
 
     // 깐부: 전체 게임 중 같은 팀 비율 65% 이상
     if (totalGames >= 5 && sameTeamRatio >= 65) {
-        badges.push(`<span class="synergy-badge one-plus-one" title="같은 팀 비율 65% 이상"><i class="fas fa-handshake me-1"></i>깐부</span>`);
+        badges.push(createTag('fa-handshake', '깐부', '#3B82F6', '같은 팀 비율 65% 이상'));
     }
 
     // 질긴 인연: 전체 게임 중 적으로 만난 비율 65% 이상
     if (totalGames >= 5 && vsRatio >= 65) {
-        badges.push(`<span class="synergy-badge long-rivalry" title="상대 팀 비율 65% 이상"><i class="fas fa-link me-1"></i>질긴 인연</span>`);
+        badges.push(createTag('fa-link', '질긴 인연', '#F97316', '상대 팀 비율 65% 이상'));
     }
 
-    return badges.join('');
+    if (badges.length === 0) return '';
+
+    return `<div class="player-tags-all d-flex flex-wrap justify-content-center gap-2">${badges.join('')}</div>`;
 }
 
 // 최근 10판의 MVP/ACE 카운트 계산
@@ -1625,7 +1638,7 @@ export function getPlayerTags(playerName) {
     // 상대/시너지 관련 태그 계산 (최근 10판 기준)
     if (gameData?.players && totalGames >= 5) {
         const hunters = [];      // 사냥꾼 (상대 승률 80%+)
-        const preys = [];        // 강아지 (상대 승률 20%-)
+        const preys = [];        // 개 (상대 승률 20%-)
         const goodDuos = [];     // 찰떡 (팀 승률 80%+)
         const badDuos = [];      // 상극 (팀 승률 20%-)
 
@@ -1639,7 +1652,7 @@ export function getPlayerTags(playerName) {
                 if (rivalry.winRate >= 80) {
                     hunters.push({ name: otherPlayer.name, ...rivalry });
                 }
-                // 🐕 [이름]의 강아지: 최근 10판 중 20%-
+                // 🐕 [이름]의 개: 최근 10판 중 20%-
                 if (rivalry.winRate <= 20) {
                     preys.push({ name: otherPlayer.name, ...rivalry });
                 }
@@ -1669,11 +1682,11 @@ export function getPlayerTags(playerName) {
             });
         });
 
-        // 모든 강아지 태그 추가
+        // 모든 개 태그 추가
         preys.forEach(prey => {
             tags.push({
                 icon: 'fa-dog',
-                text: `${prey.name}의 강아지`,
+                text: `${prey.name}의 개`,
                 color: '#8B5CF6',
                 title: `vs ${prey.name}: ${prey.wins}승 ${prey.losses}패 (${prey.winRate.toFixed(0)}%)`
             });
@@ -1683,7 +1696,7 @@ export function getPlayerTags(playerName) {
         goodDuos.forEach(duo => {
             tags.push({
                 icon: 'fa-handshake',
-                text: `${duo.name}와 찰떡`,
+                text: `${duo.name}${getParticle(duo.name, ['와', '과'])} 찰떡`,
                 color: '#3B82F6',
                 title: `+ ${duo.name}: ${duo.wins}승 ${duo.losses}패 (${duo.winRate.toFixed(0)}%)`
             });
@@ -1693,7 +1706,7 @@ export function getPlayerTags(playerName) {
         badDuos.forEach(duo => {
             tags.push({
                 icon: 'fa-heart-broken',
-                text: `${duo.name}와 상극`,
+                text: `${duo.name}${getParticle(duo.name, ['와', '과'])} 상극`,
                 color: '#EF4444',
                 title: `+ ${duo.name}: ${duo.wins}승 ${duo.losses}패 (${duo.winRate.toFixed(0)}%)`
             });
@@ -1832,9 +1845,9 @@ export function getTagDefinitions() {
             category: '상대/시너지 (최근 10판)',
             tags: [
                 { text: '[상대] 사냥꾼', icon: 'fa-crosshairs', color: '#10B981', description: '최근 10판 중 특정 상대와 5판 이상, 승률 80% 이상' },
-                { text: '[상대]의 강아지', icon: 'fa-dog', color: '#8B5CF6', description: '최근 10판 중 특정 상대와 5판 이상, 승률 20% 이하' },
-                { text: '[파트너]와 찰떡', icon: 'fa-handshake', color: '#3B82F6', description: '최근 10판 중 특정 플레이어와 같은 팀 5판 이상, 승률 80% 이상' },
-                { text: '[파트너]와 상극', icon: 'fa-heart-broken', color: '#EF4444', description: '최근 10판 중 특정 플레이어와 같은 팀 5판 이상, 승률 20% 이하' }
+                { text: '[상대]의 개', icon: 'fa-dog', color: '#8B5CF6', description: '최근 10판 중 특정 상대와 5판 이상, 승률 20% 이하' },
+                { text: '[파트너]와/과 찰떡', icon: 'fa-handshake', color: '#3B82F6', description: '최근 10판 중 특정 플레이어와 같은 팀 5판 이상, 승률 80% 이상' },
+                { text: '[파트너]와/과 상극', icon: 'fa-heart-broken', color: '#EF4444', description: '최근 10판 중 특정 플레이어와 같은 팀 5판 이상, 승률 20% 이하' }
             ]
         }
     ];
@@ -1857,9 +1870,9 @@ export function getPlayersWithTags() {
             if (/^\d+연승$/.test(tag.text)) normalizedText = 'N연승';
             if (/^\d+연패$/.test(tag.text)) normalizedText = 'N연패';
             if (tag.text.includes('사냥꾼')) normalizedText = '[상대] 사냥꾼';
-            if (tag.text.includes('의 강아지')) normalizedText = '[상대]의 강아지';
-            if (tag.text.includes('와 찰떡')) normalizedText = '[파트너]와 찰떡';
-            if (tag.text.includes('와 상극')) normalizedText = '[파트너]와 상극';
+            if (tag.text.includes('의 개')) normalizedText = '[상대]의 개';
+            if (tag.text.includes('찰떡')) normalizedText = '[파트너]와/과 찰떡';
+            if (tag.text.includes('상극')) normalizedText = '[파트너]와/과 상극';
 
             if (!tagToPlayers[normalizedText]) {
                 tagToPlayers[normalizedText] = [];
