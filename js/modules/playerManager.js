@@ -78,16 +78,28 @@ export function handlePlayerClick(playerName) {
     // 선택된 플레이어 수에 따라 표시 영역 업데이트
     if (selectedPlayers.length === 0) {
         console.log("No players selected, hiding details");
-        playerDetailsDisplayArea.style.display = 'none';
-        playerDetailsContent.innerHTML = '';
+        // 슬라이드 아웃 애니메이션
+        playerDetailsDisplayArea.classList.remove('slide-in');
+        playerDetailsDisplayArea.classList.add('slide-out');
+        setTimeout(() => {
+            playerDetailsDisplayArea.style.display = 'none';
+            playerDetailsDisplayArea.classList.remove('slide-out');
+            playerDetailsContent.innerHTML = '';
+        }, 200);
     } else if (selectedPlayers.length === 1) {
         console.log("One player selected, showing all player comparison");
-        playerDetailsDisplayArea.style.display = 'block';
         playerDetailsContent.innerHTML = renderAllPlayerComparison(selectedPlayers[0]);
+        playerDetailsDisplayArea.style.display = 'block';
+        // 슬라이드 인 애니메이션
+        playerDetailsDisplayArea.classList.remove('slide-out');
+        playerDetailsDisplayArea.classList.add('slide-in');
     } else if (selectedPlayers.length === 2) {
         console.log("Two players selected, showing comparison");
-        playerDetailsDisplayArea.style.display = 'block';
         playerDetailsContent.innerHTML = renderComparePlayerDetails(selectedPlayers[0], selectedPlayers[1]);
+        playerDetailsDisplayArea.style.display = 'block';
+        // 슬라이드 인 애니메이션
+        playerDetailsDisplayArea.classList.remove('slide-out');
+        playerDetailsDisplayArea.classList.add('slide-in');
     }
 }
 
@@ -100,8 +112,17 @@ export function clearPlayerSelection() {
         }
     });
     selectedPlayers = [];
-    document.getElementById('playerDetailsDisplayArea').style.display = 'none';
-    document.getElementById('playerDetailsContent').innerHTML = '';
+    const playerDetailsDisplayArea = document.getElementById('playerDetailsDisplayArea');
+    const playerDetailsContent = document.getElementById('playerDetailsContent');
+
+    // 슬라이드 아웃 애니메이션
+    playerDetailsDisplayArea.classList.remove('slide-in');
+    playerDetailsDisplayArea.classList.add('slide-out');
+    setTimeout(() => {
+        playerDetailsDisplayArea.style.display = 'none';
+        playerDetailsDisplayArea.classList.remove('slide-out');
+        playerDetailsContent.innerHTML = '';
+    }, 250);
 }
 
 // 상대 전적 차트 렌더링

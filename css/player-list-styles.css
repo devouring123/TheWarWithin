@@ -502,7 +502,7 @@
     max-height: 500px;
     opacity: 1;
     overflow: hidden;
-    transition: max-height 0.25s ease-in-out, opacity 0.2s ease-in-out, margin 0.2s ease-in-out;
+    transition: max-height 0.3s ease-in-out, opacity 0.25s ease-in-out, margin 0.2s ease-in-out;
     margin-top: 8px;
 }
 
@@ -668,8 +668,8 @@
     max-width: 400px;
     transform: translateX(120%);
     opacity: 0;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-                opacity 0.3s ease;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.2s ease;
     pointer-events: auto;
 }
 
@@ -1012,7 +1012,7 @@
     z-index: 10000;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
 }
 
 .loading-overlay.show {

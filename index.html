@@ -164,7 +164,7 @@
             border-radius: 16px;
             box-shadow: var(--shadow-md);
             margin-bottom: 8px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             overflow: hidden;
         }
 
@@ -192,7 +192,7 @@
             backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border-subtle);
             padding: 0.75rem 0;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
 
         .navbar-brand {
@@ -850,7 +850,7 @@
 
         /* 탭 컨텐츠 애니메이션 */
         .tab-pane {
-            animation: fadeIn 0.3s ease-in-out;
+            animation: fadeIn 0.2s ease-in-out;
         }
 
         @keyframes fadeIn {
@@ -904,7 +904,7 @@
         #playersInput {
             border: 2px solid #e2e8f0;
             border-radius: 12px;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             font-size: 1rem;
         }
 
@@ -916,7 +916,7 @@
 
         /* 카드 애니메이션 */
         .card {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
         .card:hover {
@@ -1541,6 +1541,41 @@
             overflow: visible !important;
         }
 
+        /* 전적 분석 등장 애니메이션 */
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                max-height: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                max-height: 2000px;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 1;
+                max-height: 2000px;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                max-height: 0;
+                transform: translateY(-20px);
+            }
+        }
+
+        #playerDetailsDisplayArea.slide-in {
+            animation: slideDown 0.2s ease-out forwards;
+        }
+
+        #playerDetailsDisplayArea.slide-out {
+            animation: slideUp 0.2s ease-in forwards;
+        }
+
         /* 플레이어 하이라이트 박스 - 다크모드 대응 */
         .player-highlight {
             background: rgba(139, 92, 246, 0.2) !important;
@@ -1624,7 +1659,7 @@
 
         /* Smooth Page Transitions */
         section {
-            animation: fadeInUp 0.5s ease-out;
+            animation: fadeInUp 0.2s ease-out;
         }
 
         @keyframes fadeInUp {
