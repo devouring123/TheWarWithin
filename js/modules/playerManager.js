@@ -637,18 +637,17 @@ function renderComparePlayerDetails(player1Name, player2Name) {
         `;
         
         // 포지션별 색상 클래스 매핑
-        const positionClassMap = {
-            'top': 'pos-top',
-            'jungle': 'pos-jungle',
-            'mid': 'pos-mid',
-            'adc': 'pos-adc',
-            'support': 'pos-support'
+        const positionInfo = {
+            'top': { class: 'pos-top', img: 'img/positions/Top.svg', name: 'TOP' },
+            'jungle': { class: 'pos-jungle', img: 'img/positions/Jug.svg', name: 'JGL' },
+            'mid': { class: 'pos-mid', img: 'img/positions/Mid.svg', name: 'MID' },
+            'adc': { class: 'pos-adc', img: 'img/positions/Bot.svg', name: 'ADC' },
+            'support': { class: 'pos-support', img: 'img/positions/Sup.svg', name: 'SUP' }
         };
-        
+
         Object.entries(positionHeadToHead).forEach(([position, data]) => {
-            const posName = getPositionName(position);
-            const posClass = positionClassMap[position] || '';
-            
+            const posInfo = positionInfo[position] || { class: '', img: '', name: position };
+
             // 승률에 따라 색상 클래스 결정 (winrate는 0-100 범위의 퍼센트 값)
             const getPlayerWinrateClass = (winrate) => {
                 // Ensure winrate is a number
@@ -658,13 +657,13 @@ function renderComparePlayerDetails(player1Name, player2Name) {
                 if (numericWinrate >= 40) return 'text-warning';
                 return 'text-danger';
             };
-            
+
             const player1WinrateClass = getPlayerWinrateClass(data.player1.winrate);
             const player2WinrateClass = getPlayerWinrateClass(data.player2.winrate);
-            
+
             positionTableHTML += `
                 <tr>
-                    <td><span class="position-badge ${posClass}">${posName}</span></td>
+                    <td><span class="position-badge ${posInfo.class}"><img src="${posInfo.img}" alt="${posInfo.name}" title="${posInfo.name}"></span></td>
                     <td>
                         <span class="${player1WinrateClass}">${data.player1.wins}승 ${data.player1.losses}패</span>
                         <span class="badge bg-secondary ms-1">${Number(data.player1.winrate).toFixed(1)}%</span>
