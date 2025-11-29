@@ -17,6 +17,28 @@ export function getSelectedPlayers() {
     return selectedPlayers;
 }
 
+// 카드 영역 높이를 상세 패널 높이에 맞춤
+function syncCardsWrapperHeight() {
+    const detailsPanel = document.getElementById('playerDetailsDisplayArea');
+    const cardsWrapper = document.querySelector('.player-cards-wrapper');
+
+    if (detailsPanel && cardsWrapper && detailsPanel.classList.contains('show')) {
+        // 상세 패널의 실제 높이를 가져와서 카드 영역에 적용
+        requestAnimationFrame(() => {
+            const panelHeight = detailsPanel.offsetHeight;
+            cardsWrapper.style.maxHeight = panelHeight + 'px';
+        });
+    }
+}
+
+// 카드 영역 높이 초기화
+function resetCardsWrapperHeight() {
+    const cardsWrapper = document.querySelector('.player-cards-wrapper');
+    if (cardsWrapper) {
+        cardsWrapper.style.maxHeight = '';
+    }
+}
+
 export function handlePlayerClick(playerName) {
     console.log("handlePlayerClick called with:", playerName);
     const card = document.getElementById(`player-card-${playerName}`);
@@ -78,33 +100,46 @@ export function handlePlayerClick(playerName) {
     // 선택된 플레이어 수에 따라 표시 영역 업데이트
     if (selectedPlayers.length === 0) {
         console.log("No players selected, hiding details");
-        // 슬라이드 아웃 애니메이션
-        playerDetailsDisplayArea.classList.remove('slide-in');
-        playerDetailsDisplayArea.classList.add('slide-out');
+        // 패널 숨기기 애니메이션
+        playerDetailsDisplayArea.classList.remove('show');
+        playerDetailsDisplayArea.classList.add('hiding');
+
+        // 애니메이션 완료 후 완전히 숨기기
         setTimeout(() => {
+            playerDetailsDisplayArea.classList.remove('hiding');
             playerDetailsDisplayArea.style.display = 'none';
-            playerDetailsDisplayArea.classList.remove('slide-out');
             playerDetailsContent.innerHTML = '';
-        }, 200);
+            resetCardsWrapperHeight();
+        }, 60);
     } else if (selectedPlayers.length === 1) {
         console.log("One player selected, showing all player comparison");
         playerDetailsContent.innerHTML = renderAllPlayerComparison(selectedPlayers[0]);
         playerDetailsDisplayArea.style.display = 'block';
-        // 슬라이드 인 애니메이션
-        playerDetailsDisplayArea.classList.remove('slide-out');
-        playerDetailsDisplayArea.classList.add('slide-in');
+        // 패널 표시 애니메이션
+        requestAnimationFrame(() => {
+            playerDetailsDisplayArea.classList.add('show');
+            syncCardsWrapperHeight();
+        });
     } else if (selectedPlayers.length === 2) {
         console.log("Two players selected, showing comparison");
         playerDetailsContent.innerHTML = renderComparePlayerDetails(selectedPlayers[0], selectedPlayers[1]);
         playerDetailsDisplayArea.style.display = 'block';
-        // 슬라이드 인 애니메이션
-        playerDetailsDisplayArea.classList.remove('slide-out');
-        playerDetailsDisplayArea.classList.add('slide-in');
+        // 패널 표시 애니메이션
+        requestAnimationFrame(() => {
+            playerDetailsDisplayArea.classList.add('show');
+            syncCardsWrapperHeight();
+        });
     }
 }
 
 export function clearPlayerSelection() {
     console.log("clearPlayerSelection called.");
+
+    // 선택된 플레이어가 없으면 아무것도 하지 않음
+    if (selectedPlayers.length === 0) {
+        return;
+    }
+
     selectedPlayers.forEach(playerName => {
         const card = document.getElementById(`player-card-${playerName}`);
         if (card) {
@@ -115,14 +150,17 @@ export function clearPlayerSelection() {
     const playerDetailsDisplayArea = document.getElementById('playerDetailsDisplayArea');
     const playerDetailsContent = document.getElementById('playerDetailsContent');
 
-    // 슬라이드 아웃 애니메이션
-    playerDetailsDisplayArea.classList.remove('slide-in');
-    playerDetailsDisplayArea.classList.add('slide-out');
+    // 패널 숨기기 애니메이션
+    playerDetailsDisplayArea.classList.remove('show');
+    playerDetailsDisplayArea.classList.add('hiding');
+
+    // 애니메이션 완료 후 완전히 숨기기
     setTimeout(() => {
+        playerDetailsDisplayArea.classList.remove('hiding');
         playerDetailsDisplayArea.style.display = 'none';
-        playerDetailsDisplayArea.classList.remove('slide-out');
         playerDetailsContent.innerHTML = '';
-    }, 250);
+        resetCardsWrapperHeight();
+    }, 60);
 }
 
 // 태그 용어집에서 플레이어 선택 (애니메이션 없이 즉시 초기화 후 선택)
@@ -1037,6 +1075,95 @@ export function calculateSynergy(player1Name, player2Name) {
         vsWinRate: vsGames > 0 ? (p1WinsVsP2 / vsGames) * 100 : 0,
         vsGames
     };
+}
+
+// 모든 듀오 시너지 계산 및 랭킹 반환
+export function getDuoSynergyRanking(minGames = 5) {
+    if (!gameData?.players || !gameRecords) return { best: [], worst: [] };
+
+    const duoStats = [];
+    const players = gameData.players;
+
+    // 모든 플레이어 조합 계산
+    for (let i = 0; i < players.length; i++) {
+        for (let j = i + 1; j < players.length; j++) {
+            const p1 = players[i].name;
+            const p2 = players[j].name;
+            const synergy = calculateSynergy(p1, p2);
+
+            if (synergy.sameTeamGames >= minGames) {
+                duoStats.push({
+                    player1: p1,
+                    player2: p2,
+                    games: synergy.sameTeamGames,
+                    winRate: synergy.sameTeamWinRate
+                });
+            }
+        }
+    }
+
+    // 승률 기준 정렬
+    const sorted = duoStats.sort((a, b) => b.winRate - a.winRate);
+
+    return {
+        best: sorted.slice(0, 10),
+        worst: sorted.slice(-10).reverse()
+    };
+}
+
+// 듀오 시너지 랭킹 HTML 렌더링
+export function renderDuoSynergyRanking() {
+    const { best, worst } = getDuoSynergyRanking(5);
+
+    const createDuoRow = (duo, index, isBest) => {
+        const winRateColor = duo.winRate >= 60 ? '#10B981' :
+                            duo.winRate >= 40 ? '#F59E0B' : '#EF4444';
+        const rankIcon = index === 0 ? (isBest ? '🥇' : '💀') :
+                        index === 1 ? (isBest ? '🥈' : '☠️') :
+                        index === 2 ? (isBest ? '🥉' : '👻') : `${index + 1}`;
+
+        return `
+            <div class="duo-rank-item d-flex align-items-center gap-3 p-2" style="background: var(--bg-tertiary, rgba(40, 40, 45, 0.5)); border-radius: 8px;">
+                <span class="duo-rank-number fw-bold" style="min-width: 28px; text-align: center;">${rankIcon}</span>
+                <div class="duo-players flex-grow-1">
+                    <span class="fw-semibold">${duo.player1}</span>
+                    <span class="text-muted mx-1">&</span>
+                    <span class="fw-semibold">${duo.player2}</span>
+                </div>
+                <div class="duo-stats text-end">
+                    <span class="fw-bold" style="color: ${winRateColor};">${duo.winRate.toFixed(1)}%</span>
+                    <span class="text-muted small ms-1">(${duo.games}판)</span>
+                </div>
+            </div>
+        `;
+    };
+
+    return `
+        <div class="duo-synergy-ranking card mb-4" style="background: var(--bg-secondary, rgba(30, 30, 35, 0.8)); border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));">
+            <div class="card-body">
+                <h5 class="card-title mb-3">
+                    <i class="fas fa-user-friends me-2" style="color: var(--accent-primary, #8b5cf6);"></i>
+                    듀오 시너지 랭킹
+                    <span class="text-muted small ms-2">(최소 5판 이상)</span>
+                </h5>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <h6 class="text-success mb-3"><i class="fas fa-trophy me-2"></i>베스트 듀오 TOP 10</h6>
+                        <div class="d-flex flex-column gap-2">
+                            ${best.length > 0 ? best.map((duo, i) => createDuoRow(duo, i, true)).join('') : '<p class="text-muted">데이터가 없습니다</p>'}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-danger mb-3"><i class="fas fa-skull-crossbones me-2"></i>워스트 듀오 TOP 10</h6>
+                        <div class="d-flex flex-column gap-2">
+                            ${worst.length > 0 ? worst.map((duo, i) => createDuoRow(duo, i, false)).join('') : '<p class="text-muted">데이터가 없습니다</p>'}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 // 상성 배지 HTML 생성 (2인 비교 전용)
