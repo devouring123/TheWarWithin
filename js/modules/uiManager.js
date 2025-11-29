@@ -10,6 +10,59 @@ let selectedAce = null;
 let pendingGameResult = null;
 let pendingWinningTeam = null;
 
+// Confetti 애니메이션 (승리 축하)
+function triggerVictoryConfetti() {
+    // canvas-confetti 라이브러리가 로드되었는지 확인
+    if (typeof confetti !== 'function') {
+        console.warn('canvas-confetti 라이브러리가 로드되지 않았습니다.');
+        return;
+    }
+
+    // 기본 confetti 발사
+    const count = 200;
+    const defaults = {
+        origin: { y: 0.7 },
+        zIndex: 9999
+    };
+
+    function fire(particleRatio, opts) {
+        confetti({
+            ...defaults,
+            ...opts,
+            particleCount: Math.floor(count * particleRatio)
+        });
+    }
+
+    // 여러 번 다양한 설정으로 발사
+    fire(0.25, {
+        spread: 26,
+        startVelocity: 55,
+        colors: ['#8b5cf6', '#3b82f6', '#06b6d4'] // 보라, 파랑, 청록
+    });
+    fire(0.2, {
+        spread: 60,
+        colors: ['#10b981', '#f59e0b'] // 녹색, 주황
+    });
+    fire(0.35, {
+        spread: 100,
+        decay: 0.91,
+        scalar: 0.8,
+        colors: ['#ec4899', '#ef4444'] // 분홍, 빨강
+    });
+    fire(0.1, {
+        spread: 120,
+        startVelocity: 25,
+        decay: 0.92,
+        scalar: 1.2,
+        colors: ['#fafafa', '#fbbf24'] // 흰색, 금색
+    });
+    fire(0.1, {
+        spread: 120,
+        startVelocity: 45,
+        colors: ['#8b5cf6', '#06b6d4', '#10b981']
+    });
+}
+
 // 로딩 스피너 관리 (HTML의 #loading 요소 사용)
 export const SpinnerManager = {
     getOverlay: function() {
@@ -161,30 +214,125 @@ export function renderOverviewStats(gameData) {
     `;
 }
 
+// 통계표 정렬/필터 상태
+let statsTableState = {
+    sortColumn: 'winrate',  // 기본 정렬: 승률
+    sortDirection: 'desc',  // 내림차순
+    minGames: 10,           // 최소 게임 수
+    tierFilter: 'all'       // 티어 필터
+};
+
+// 통계표 상태 저장 (외부에서 접근용)
+export function getStatsTableState() {
+    return statsTableState;
+}
+
+// 통계표 정렬 변경
+export function setStatsTableSort(column, gameData) {
+    if (statsTableState.sortColumn === column) {
+        // 같은 컬럼 클릭 시 방향 토글
+        statsTableState.sortDirection = statsTableState.sortDirection === 'desc' ? 'asc' : 'desc';
+    } else {
+        statsTableState.sortColumn = column;
+        statsTableState.sortDirection = 'desc';
+    }
+    renderStatsTable(gameData);
+}
+
+// 통계표 필터 변경
+export function setStatsTableFilter(filterType, value, gameData) {
+    if (filterType === 'minGames') {
+        statsTableState.minGames = parseInt(value) || 0;
+    } else if (filterType === 'tier') {
+        statsTableState.tierFilter = value;
+    }
+    renderStatsTable(gameData);
+}
+
 // 통계표 렌더링 (스프레드시트 스타일)
 export function renderStatsTable(gameData) {
     const statsTableEl = document.getElementById('statsTable');
-    
-    // 10판 이상 플레이한 플레이어만 필터링하고 승률 기준으로 정렬
-    const sortedPlayers = [...gameData.players]
-        .filter(player => player.total_wins + player.total_losses >= 10)
-        .sort((a, b) => b.overall_winrate - a.overall_winrate);
-    
+    const { sortColumn, sortDirection, minGames, tierFilter } = statsTableState;
+
+    // 필터링
+    let filteredPlayers = [...gameData.players]
+        .filter(player => player.total_wins + player.total_losses >= minGames);
+
+    if (tierFilter !== 'all') {
+        filteredPlayers = filteredPlayers.filter(player => player.tier === tierFilter);
+    }
+
+    // LOL 티어 순서 (높은 티어 = 높은 숫자)
+    const getTierRank = (tier) => {
+        const tierOrder = {
+            '챌린저': 11, '챌': 11,
+            '그랜드마스터': 10, '그마': 10,
+            '마스터': 9, '마': 9,
+            '다이아몬드': 8, '다이아': 8, '다': 8,
+            '에메랄드': 7, '에': 7,
+            '플래티넘': 6, '플레': 6, '플': 6,
+            '골드': 5, '골': 5,
+            '실버': 4, '실': 4,
+            '브론즈': 3, '브': 3,
+            '아이언': 2, '아': 2,
+            '언랭크': 1, '언랭': 1, '언': 1
+        };
+        return tierOrder[tier] || 0;
+    };
+
+    // 정렬
+    const getSortValue = (player, column) => {
+        switch (column) {
+            case 'name': return player.name;
+            case 'tier': return getTierRank(player.tier);
+            case 'games': return player.total_games;
+            case 'winrate': return player.overall_winrate;
+            case 'top': return player.positions.top.games > 0 ? player.positions.top.wins / player.positions.top.games : -1;
+            case 'jungle': return player.positions.jungle.games > 0 ? player.positions.jungle.wins / player.positions.jungle.games : -1;
+            case 'mid': return player.positions.mid.games > 0 ? player.positions.mid.wins / player.positions.mid.games : -1;
+            case 'adc': return player.positions.adc.games > 0 ? player.positions.adc.wins / player.positions.adc.games : -1;
+            case 'support': return player.positions.support.games > 0 ? player.positions.support.wins / player.positions.support.games : -1;
+            case 'wins': return player.total_wins;
+            case 'losses': return player.total_losses;
+            default: return player.overall_winrate;
+        }
+    };
+
+    const sortedPlayers = filteredPlayers.sort((a, b) => {
+        const aVal = getSortValue(a, sortColumn);
+        const bVal = getSortValue(b, sortColumn);
+
+        if (typeof aVal === 'string') {
+            return sortDirection === 'asc'
+                ? aVal.localeCompare(bVal, 'ko-KR')
+                : bVal.localeCompare(aVal, 'ko-KR');
+        }
+        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+    });
+
+    // 정렬 아이콘 생성
+    const getSortIcon = (column) => {
+        if (sortColumn !== column) return '<i class="fas fa-sort text-muted ms-1" style="opacity: 0.3;"></i>';
+        return sortDirection === 'desc'
+            ? '<i class="fas fa-sort-down ms-1"></i>'
+            : '<i class="fas fa-sort-up ms-1"></i>';
+    };
+
     const headerRow = `
         <thead>
             <tr>
                 <th class="text-center">순위</th>
-                <th class="text-center">이름</th>
-                <th class="text-center">티어</th>
-                <th class="text-center">게임</th>
-                <th class="text-center">승률</th>
-                <th class="text-center"><img src="img/positions/Top.svg" alt="TOP" class="position-header-icon" title="TOP"></th>
-                <th class="text-center"><img src="img/positions/Jug.svg" alt="JGL" class="position-header-icon" title="JGL"></th>
-                <th class="text-center"><img src="img/positions/Mid.svg" alt="MID" class="position-header-icon" title="MID"></th>
-                <th class="text-center"><img src="img/positions/Bot.svg" alt="ADC" class="position-header-icon" title="ADC"></th>
-                <th class="text-center"><img src="img/positions/Sup.svg" alt="SUP" class="position-header-icon" title="SUP"></th>
-                <th class="text-center">승</th>
-                <th class="text-center">패</th>
+                <th class="text-center sortable-header" data-sort="name">이름${getSortIcon('name')}</th>
+                <th class="text-center sortable-header" data-sort="tier">티어${getSortIcon('tier')}</th>
+                <th class="text-center sortable-header" data-sort="games">게임${getSortIcon('games')}</th>
+                <th class="text-center sortable-header" data-sort="winrate">승률${getSortIcon('winrate')}</th>
+                <th class="text-center sortable-header" data-sort="top"><img src="img/positions/Top.svg" alt="TOP" class="position-header-icon" title="TOP">${getSortIcon('top')}</th>
+                <th class="text-center sortable-header" data-sort="jungle"><img src="img/positions/Jug.svg" alt="JGL" class="position-header-icon" title="JGL">${getSortIcon('jungle')}</th>
+                <th class="text-center sortable-header" data-sort="mid"><img src="img/positions/Mid.svg" alt="MID" class="position-header-icon" title="MID">${getSortIcon('mid')}</th>
+                <th class="text-center sortable-header" data-sort="adc"><img src="img/positions/Bot.svg" alt="ADC" class="position-header-icon" title="ADC">${getSortIcon('adc')}</th>
+                <th class="text-center sortable-header" data-sort="support"><img src="img/positions/Sup.svg" alt="SUP" class="position-header-icon" title="SUP">${getSortIcon('support')}</th>
+                <th class="text-center sortable-header" data-sort="wins">승${getSortIcon('wins')}</th>
+                <th class="text-center sortable-header" data-sort="losses">패${getSortIcon('losses')}</th>
             </tr>
         </thead>
     `;
@@ -268,6 +416,15 @@ export function renderStatsTable(gameData) {
             ${bodyRows}
         </tbody>
     `;
+
+    // 정렬 헤더 클릭 이벤트
+    statsTableEl.querySelectorAll('.sortable-header').forEach(header => {
+        header.style.cursor = 'pointer';
+        header.addEventListener('click', () => {
+            const column = header.dataset.sort;
+            setStatsTableSort(column, gameData);
+        });
+    });
 }
 
 // 플레이어 목록 렌더링
@@ -841,6 +998,9 @@ async function confirmWinAndSave() {
 
         // 로딩 오버레이 숨기기
         SpinnerManager.hide();
+
+        // 승리 confetti 애니메이션
+        triggerVictoryConfetti();
 
         ToastManager.success(`팀 ${pendingWinningTeam} 승리! MVP: ${selectedMvp}, ACE: ${selectedAce}`);
         resetToWaitingAreaWithTeams();

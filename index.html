@@ -138,6 +138,11 @@
             min-height: 100vh;
         }
 
+        /* 컨테이너 너비 확장 */
+        .container {
+            max-width: 1500px;
+        }
+
         /* 스크롤바 */
         ::-webkit-scrollbar {
             width: 8px;
@@ -1541,41 +1546,6 @@
             overflow: visible !important;
         }
 
-        /* 전적 분석 등장 애니메이션 */
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                max-height: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                max-height: 2000px;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 1;
-                max-height: 2000px;
-                transform: translateY(0);
-            }
-            to {
-                opacity: 0;
-                max-height: 0;
-                transform: translateY(-20px);
-            }
-        }
-
-        #playerDetailsDisplayArea.slide-in {
-            animation: slideDown 0.2s ease-out forwards;
-        }
-
-        #playerDetailsDisplayArea.slide-out {
-            animation: slideUp 0.2s ease-in forwards;
-        }
-
         /* 플레이어 하이라이트 박스 - 다크모드 대응 */
         .player-highlight {
             background: rgba(139, 92, 246, 0.2) !important;
@@ -2081,6 +2051,13 @@
                 </div>
             </section>
 
+            <!-- Duo Synergy Ranking Section -->
+            <section id="duoSynergy" class="mb-5">
+                <div id="duoSynergyContainer">
+                    <!-- 듀오 시너지 랭킹이 여기에 렌더링됨 -->
+                </div>
+            </section>
+
             <!-- Players Section -->
             <section id="players" class="mb-5">
                 <div class="d-flex justify-content-between align-items-baseline mb-1">
@@ -2097,17 +2074,24 @@
                         </button>
                     </div>
                 </div>
-                <!-- Player Details Display Area -->
-                <div id="playerDetailsDisplayArea" class="card mb-4" style="display: none;">
-                    <div class="card-body" id="playerDetailsContent">
-                        <!-- Player details or comparison will be rendered here -->
+                <!-- 플레이어 레이아웃 컨테이너 (좌: 상세패널, 우: 카드목록) -->
+                <div class="player-layout-container">
+                    <!-- Player Details Display Area (왼쪽 고정) -->
+                    <div id="playerDetailsDisplayArea" class="card" style="display: none;">
+                        <div class="card-body" id="playerDetailsContent">
+                            <!-- Player details or comparison will be rendered here -->
+                        </div>
+                    </div>
+
+                    <!-- 플레이어 카드 영역 (오른쪽) -->
+                    <div class="player-cards-wrapper">
+                        <div class="row" id="playersList">
+                            <!-- 동적으로 생성 -->
+                        </div>
                     </div>
                 </div>
-                <div class="row" id="playersList">
-                    <!-- 동적으로 생성 -->
-                </div>
 
-                <!-- Tag Glossary Section -->
+                <!-- Tag Glossary Section (레이아웃 컨테이너 밖) -->
                 <div id="tagGlossaryContainer" class="mt-4">
                     <!-- 태그 용어집이 여기에 렌더링됨 -->
                 </div>
@@ -2127,6 +2111,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <!-- html2canvas for image capture -->
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <!-- canvas-confetti for victory animation -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
     <!-- Theme Toggle Script -->
     <script>
         // 테마 관리

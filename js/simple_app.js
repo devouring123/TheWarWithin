@@ -2,7 +2,7 @@
 import { setupEventListeners, toggleCompactMode, SpinnerManager } from './modules/uiManager.js';
 import { loadData, showError, hideLoading } from './modules/gameManager.js';
 import { renderOverviewStats, renderStatsTable, renderPlayersList, renderCharts, updateLastUpdated, renderMatchHistory, showCaptureButton } from './modules/uiManager.js';
-import { handlePlayerClick, clearPlayerSelection, selectPlayerFromGlossary, getSelectedPlayers, setGameRecords, setGameData, renderRivalChart, renderTeammateChart } from './modules/playerManager.js';
+import { handlePlayerClick, clearPlayerSelection, selectPlayerFromGlossary, getSelectedPlayers, setGameRecords, setGameData, renderRivalChart, renderTeammateChart, renderDuoSynergyRanking } from './modules/playerManager.js';
 import { initializeWinRateSystem, updateWinRateDisplay } from './modules/winRateDisplay.js';
 import { initializePlayerPicker } from './modules/playerPicker.js';
 import { setGameDataForTeamBuilder } from './modules/teamBuilder.js';
@@ -89,6 +89,12 @@ async function initializeApp() {
         // 매치 히스토리 렌더링 (서버 데이터 사용)
         renderMatchHistory(gameRecords);
 
+        // 듀오 시너지 랭킹 렌더링
+        const duoSynergyContainer = document.getElementById('duoSynergyContainer');
+        if (duoSynergyContainer) {
+            duoSynergyContainer.innerHTML = renderDuoSynergyRanking();
+        }
+
     } catch (error) {
         console.error('앱 초기화 오류:', error);
         showError(`앱을 초기화할 수 없습니다: ${error.message}`);
@@ -122,6 +128,12 @@ async function refreshData() {
 
         // 매치 히스토리 렌더링
         renderMatchHistory(gameRecords);
+
+        // 듀오 시너지 랭킹 렌더링
+        const duoSynergyContainer = document.getElementById('duoSynergyContainer');
+        if (duoSynergyContainer) {
+            duoSynergyContainer.innerHTML = renderDuoSynergyRanking();
+        }
 
     } catch (error) {
         console.error('데이터 새로고침 오류:', error);
