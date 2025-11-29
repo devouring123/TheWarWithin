@@ -262,11 +262,29 @@ export function renderStatsTable(gameData) {
         filteredPlayers = filteredPlayers.filter(player => player.tier === tierFilter);
     }
 
+    // LOL 티어 순서 (높은 티어 = 높은 숫자)
+    const getTierRank = (tier) => {
+        const tierOrder = {
+            '챌린저': 11, '챌': 11,
+            '그랜드마스터': 10, '그마': 10,
+            '마스터': 9, '마': 9,
+            '다이아몬드': 8, '다이아': 8, '다': 8,
+            '에메랄드': 7, '에': 7,
+            '플래티넘': 6, '플레': 6, '플': 6,
+            '골드': 5, '골': 5,
+            '실버': 4, '실': 4,
+            '브론즈': 3, '브': 3,
+            '아이언': 2, '아': 2,
+            '언랭크': 1, '언랭': 1, '언': 1
+        };
+        return tierOrder[tier] || 0;
+    };
+
     // 정렬
     const getSortValue = (player, column) => {
         switch (column) {
             case 'name': return player.name;
-            case 'tier': return player.tier || '';
+            case 'tier': return getTierRank(player.tier);
             case 'games': return player.total_games;
             case 'winrate': return player.overall_winrate;
             case 'top': return player.positions.top.games > 0 ? player.positions.top.wins / player.positions.top.games : -1;
@@ -299,33 +317,6 @@ export function renderStatsTable(gameData) {
             ? '<i class="fas fa-sort-down ms-1"></i>'
             : '<i class="fas fa-sort-up ms-1"></i>';
     };
-
-    // 필터 컨트롤 생성
-    const filterControls = `
-        <div class="stats-filter-controls d-flex gap-3 mb-3 align-items-center flex-wrap">
-            <div class="d-flex align-items-center gap-2">
-                <label class="text-muted small mb-0">최소 게임:</label>
-                <select class="form-select form-select-sm" id="minGamesFilter" style="width: auto;">
-                    <option value="0" ${minGames === 0 ? 'selected' : ''}>전체</option>
-                    <option value="5" ${minGames === 5 ? 'selected' : ''}>5판+</option>
-                    <option value="10" ${minGames === 10 ? 'selected' : ''}>10판+</option>
-                    <option value="20" ${minGames === 20 ? 'selected' : ''}>20판+</option>
-                    <option value="30" ${minGames === 30 ? 'selected' : ''}>30판+</option>
-                </select>
-            </div>
-            <div class="d-flex align-items-center gap-2">
-                <label class="text-muted small mb-0">티어:</label>
-                <select class="form-select form-select-sm" id="tierFilter" style="width: auto;">
-                    <option value="all" ${tierFilter === 'all' ? 'selected' : ''}>전체</option>
-                    <option value="S" ${tierFilter === 'S' ? 'selected' : ''}>S</option>
-                    <option value="A" ${tierFilter === 'A' ? 'selected' : ''}>A</option>
-                    <option value="B" ${tierFilter === 'B' ? 'selected' : ''}>B</option>
-                    <option value="C" ${tierFilter === 'C' ? 'selected' : ''}>C</option>
-                </select>
-            </div>
-            <span class="text-muted small">${sortedPlayers.length}명</span>
-        </div>
-    `;
 
     const headerRow = `
         <thead>
@@ -419,16 +410,6 @@ export function renderStatsTable(gameData) {
         `;
     }).join('');
     
-    // 테이블 컨테이너에 필터 + 테이블 렌더링
-    const tableContainer = statsTableEl.parentElement;
-
-    // 기존 필터 컨트롤 제거
-    const existingFilter = tableContainer.querySelector('.stats-filter-controls');
-    if (existingFilter) existingFilter.remove();
-
-    // 필터 컨트롤 삽입
-    statsTableEl.insertAdjacentHTML('beforebegin', filterControls);
-
     statsTableEl.innerHTML = `
         ${headerRow}
         <tbody>
@@ -444,22 +425,6 @@ export function renderStatsTable(gameData) {
             setStatsTableSort(column, gameData);
         });
     });
-
-    // 필터 변경 이벤트
-    const minGamesSelect = document.getElementById('minGamesFilter');
-    const tierSelect = document.getElementById('tierFilter');
-
-    if (minGamesSelect) {
-        minGamesSelect.addEventListener('change', (e) => {
-            setStatsTableFilter('minGames', e.target.value, gameData);
-        });
-    }
-
-    if (tierSelect) {
-        tierSelect.addEventListener('change', (e) => {
-            setStatsTableFilter('tier', e.target.value, gameData);
-        });
-    }
 }
 
 // 플레이어 목록 렌더링

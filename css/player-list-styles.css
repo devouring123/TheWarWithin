@@ -1127,30 +1127,69 @@
     color: var(--text-primary, #fafafa);
 }
 
-/* 아코디언 스타일 */
-.tag-glossary .accordion-button {
-    font-size: 0.9rem;
+/* 탭 스타일 */
+.tag-glossary-tabs {
+    border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.tag-glossary-tabs .nav-link {
+    font-size: 0.85rem;
     font-weight: 600;
-    padding: 12px 16px;
+    padding: 8px 16px;
+    color: var(--text-secondary, #a0a0a0);
+    background: transparent;
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    transition: all 0.2s ease;
 }
 
-.tag-glossary .accordion-button:focus {
-    box-shadow: none;
-    border-color: var(--accent-primary, #8b5cf6);
+.tag-glossary-tabs .nav-link:hover {
+    color: var(--text-primary, #fafafa);
+    background: var(--bg-tertiary, rgba(40, 40, 45, 0.5));
+    border-color: var(--border-subtle, rgba(255, 255, 255, 0.1));
 }
 
-.tag-glossary .accordion-button:not(.collapsed) {
-    background: var(--bg-tertiary, rgba(40, 40, 45, 0.9));
+.tag-glossary-tabs .nav-link.active {
     color: var(--accent-primary, #8b5cf6);
+    background: var(--bg-tertiary, rgba(40, 40, 45, 0.8));
+    border-color: var(--border-subtle, rgba(255, 255, 255, 0.1));
+    border-bottom-color: var(--bg-tertiary, rgba(40, 40, 45, 0.8));
 }
 
-.tag-glossary .accordion-button::after {
-    filter: var(--btn-close-filter, invert(1));
-    margin-left: 4px;
+.tag-glossary-tabs .nav-link .badge {
+    font-size: 0.7rem;
 }
 
-.tag-glossary .accordion-button .badge {
-    margin-right: 4px;
+.tag-glossary-content {
+    background: var(--bg-tertiary, rgba(40, 40, 45, 0.5));
+    border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+}
+
+.tag-category-content {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.tag-category-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.tag-category-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.tag-category-content::-webkit-scrollbar-thumb {
+    background: var(--border-subtle, rgba(255, 255, 255, 0.2));
+    border-radius: 3px;
+}
+
+.tag-category-content::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-primary, #8b5cf6);
 }
 
 /* 태그 용어집 아이템 */
@@ -1196,22 +1235,30 @@
     color: var(--text-primary, #0f172a);
 }
 
-[data-theme="light"] .tag-glossary .accordion-button {
+[data-theme="light"] .tag-glossary-tabs {
+    border-bottom-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .tag-glossary-tabs .nav-link {
+    color: #64748b;
+}
+
+[data-theme="light"] .tag-glossary-tabs .nav-link:hover {
+    color: #0f172a;
     background: #f1f5f9;
-    color: var(--text-primary, #0f172a);
+    border-color: rgba(0, 0, 0, 0.1);
 }
 
-[data-theme="light"] .tag-glossary .accordion-button:not(.collapsed) {
-    background: #e2e8f0;
+[data-theme="light"] .tag-glossary-tabs .nav-link.active {
     color: var(--accent-primary, #8b5cf6);
+    background: #f8fafc;
+    border-color: rgba(0, 0, 0, 0.1);
+    border-bottom-color: #f8fafc;
 }
 
-[data-theme="light"] .tag-glossary .accordion-button::after {
-    filter: none;
-}
-
-[data-theme="light"] .tag-glossary .accordion-body {
-    background: #f8fafc !important;
+[data-theme="light"] .tag-glossary-content {
+    background: #f8fafc;
+    border-color: rgba(0, 0, 0, 0.1);
 }
 
 [data-theme="light"] .tag-glossary-item {
@@ -1239,22 +1286,30 @@
         color: var(--text-primary, #0f172a);
     }
 
-    :root:not([data-theme="dark"]) .tag-glossary .accordion-button {
+    :root:not([data-theme="dark"]) .tag-glossary-tabs {
+        border-bottom-color: rgba(0, 0, 0, 0.1);
+    }
+
+    :root:not([data-theme="dark"]) .tag-glossary-tabs .nav-link {
+        color: #64748b;
+    }
+
+    :root:not([data-theme="dark"]) .tag-glossary-tabs .nav-link:hover {
+        color: #0f172a;
         background: #f1f5f9;
-        color: var(--text-primary, #0f172a);
+        border-color: rgba(0, 0, 0, 0.1);
     }
 
-    :root:not([data-theme="dark"]) .tag-glossary .accordion-button:not(.collapsed) {
-        background: #e2e8f0;
+    :root:not([data-theme="dark"]) .tag-glossary-tabs .nav-link.active {
         color: var(--accent-primary, #8b5cf6);
+        background: #f8fafc;
+        border-color: rgba(0, 0, 0, 0.1);
+        border-bottom-color: #f8fafc;
     }
 
-    :root:not([data-theme="dark"]) .tag-glossary .accordion-button::after {
-        filter: none;
-    }
-
-    :root:not([data-theme="dark"]) .tag-glossary .accordion-body {
-        background: #f8fafc !important;
+    :root:not([data-theme="dark"]) .tag-glossary-content {
+        background: #f8fafc;
+        border-color: rgba(0, 0, 0, 0.1);
     }
 
     :root:not([data-theme="dark"]) .tag-glossary-item {
@@ -1278,9 +1333,17 @@
         padding: 12px;
     }
 
-    .tag-glossary .accordion-button {
-        font-size: 0.85rem;
-        padding: 10px 12px;
+    .tag-glossary-tabs .nav-link {
+        font-size: 0.75rem;
+        padding: 6px 10px;
+    }
+
+    .tag-glossary-tabs .nav-link .badge {
+        font-size: 0.6rem;
+    }
+
+    .tag-category-content {
+        max-height: 300px;
     }
 
     .tag-glossary-item {

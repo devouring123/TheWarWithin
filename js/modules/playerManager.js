@@ -1106,8 +1106,8 @@ export function getDuoSynergyRanking(minGames = 5) {
     const sorted = duoStats.sort((a, b) => b.winRate - a.winRate);
 
     return {
-        best: sorted.slice(0, 10),
-        worst: sorted.slice(-10).reverse()
+        best: sorted.slice(0, 5),
+        worst: sorted.slice(-5).reverse()
     };
 }
 
@@ -2043,51 +2043,58 @@ export function renderTagGlossary() {
                 </h5>
                 <p class="text-muted small mb-3">각 태그를 클릭하면 해당 태그를 가진 플레이어를 확인할 수 있습니다.</p>
 
-                <div class="accordion" id="tagGlossaryAccordion">
-                    ${definitions.map((category, catIndex) => {
-                        return `
-                            <div class="accordion-item" style="background: transparent; border-color: var(--border-subtle, rgba(255, 255, 255, 0.1));">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button ${catIndex === 0 ? '' : 'collapsed'}" type="button"
-                                            data-bs-toggle="collapse" data-bs-target="#tagCategory${catIndex}"
-                                            style="background: var(--bg-tertiary, rgba(40, 40, 45, 0.8)); color: var(--text-primary, #fafafa);">
-                                        ${category.category}
-                                        <span class="badge bg-secondary ms-2">${category.tags.length}개</span>
-                                    </button>
-                                </h2>
-                                <div id="tagCategory${catIndex}" class="accordion-collapse collapse ${catIndex === 0 ? 'show' : ''}"
-                                     data-bs-parent="#tagGlossaryAccordion">
-                                    <div class="accordion-body" style="background: var(--bg-secondary, rgba(30, 30, 35, 0.5));">
-                                        ${category.tags.map(tag => {
-                                            const players = playersWithTags[tag.text] || [];
-                                            return `
-                                                <div class="tag-glossary-item mb-3 p-3" style="background: var(--bg-tertiary, rgba(40, 40, 45, 0.5)); border-radius: 8px;">
-                                                    <div class="d-flex align-items-center gap-2 mb-2">
-                                                        <span class="player-tag" style="background: ${tag.color}20; color: ${tag.color}; border: 1px solid ${tag.color}40;">
-                                                            <i class="fas ${tag.icon} me-1"></i>${tag.text}
-                                                        </span>
-                                                        <span class="badge bg-secondary">${players.length}명</span>
-                                                    </div>
-                                                    <p class="text-muted small mb-2">${tag.description}</p>
-                                                    ${players.length > 0 ? `
-                                                        <div class="tag-players d-flex flex-wrap gap-1">
-                                                            ${players.map(p => `
-                                                                <button class="btn btn-sm btn-outline-light tag-player-btn"
-                                                                        onclick="window.selectPlayerFromGlossary('${p.name}')"
-                                                                        data-tooltip="${p.originalTag}: ${p.title}">
-                                                                    ${p.name}
-                                                                </button>
-                                                            `).join('')}
-                                                        </div>
-                                                    ` : '<p class="text-muted small mb-0 fst-italic">해당 태그를 가진 플레이어가 없습니다</p>'}
+                <!-- 탭 네비게이션 -->
+                <ul class="nav nav-tabs tag-glossary-tabs" id="tagGlossaryTabs" role="tablist">
+                    ${definitions.map((category, catIndex) => `
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link ${catIndex === 0 ? 'active' : ''}"
+                                    id="tagTab${catIndex}-tab"
+                                    data-bs-toggle="tab"
+                                    data-bs-target="#tagTab${catIndex}"
+                                    type="button"
+                                    role="tab">
+                                ${category.category}
+                                <span class="badge bg-secondary ms-1">${category.tags.length}</span>
+                            </button>
+                        </li>
+                    `).join('')}
+                </ul>
+
+                <!-- 탭 콘텐츠 -->
+                <div class="tab-content tag-glossary-content" id="tagGlossaryTabContent">
+                    ${definitions.map((category, catIndex) => `
+                        <div class="tab-pane fade ${catIndex === 0 ? 'show active' : ''}"
+                             id="tagTab${catIndex}"
+                             role="tabpanel">
+                            <div class="tag-category-content p-3">
+                                ${category.tags.map(tag => {
+                                    const players = playersWithTags[tag.text] || [];
+                                    return `
+                                        <div class="tag-glossary-item mb-3 p-3" style="background: var(--bg-tertiary, rgba(40, 40, 45, 0.5)); border-radius: 8px;">
+                                            <div class="d-flex align-items-center gap-2 mb-2">
+                                                <span class="player-tag" style="background: ${tag.color}20; color: ${tag.color}; border: 1px solid ${tag.color}40;">
+                                                    <i class="fas ${tag.icon} me-1"></i>${tag.text}
+                                                </span>
+                                                <span class="badge bg-secondary">${players.length}명</span>
+                                            </div>
+                                            <p class="text-muted small mb-2">${tag.description}</p>
+                                            ${players.length > 0 ? `
+                                                <div class="tag-players d-flex flex-wrap gap-1">
+                                                    ${players.map(p => `
+                                                        <button class="btn btn-sm btn-outline-light tag-player-btn"
+                                                                onclick="window.selectPlayerFromGlossary('${p.name}')"
+                                                                data-tooltip="${p.originalTag}: ${p.title}">
+                                                            ${p.name}
+                                                        </button>
+                                                    `).join('')}
                                                 </div>
-                                            `;
-                                        }).join('')}
-                                    </div>
-                                </div>
+                                            ` : '<p class="text-muted small mb-0 fst-italic">해당 태그를 가진 플레이어가 없습니다</p>'}
+                                        </div>
+                                    `;
+                                }).join('')}
                             </div>
-                        `;
-                    }).join('')}
+                        </div>
+                    `).join('')}
                 </div>
             </div>
         </div>
