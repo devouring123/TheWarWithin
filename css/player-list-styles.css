@@ -1371,6 +1371,7 @@
 #playerDetailsDisplayArea {
     flex: 0 0 60%;
     max-width: 60%;
+    min-height: 500px;
     position: sticky;
     top: 80px;
     z-index: 10;
@@ -1406,6 +1407,7 @@
     flex: 0 0 calc(40% - 10px);
     max-width: calc(40% - 10px);
     overflow-y: auto;
+    padding-top: 5px;
     padding-right: 8px;
 }
 
@@ -1478,6 +1480,7 @@
         flex: none;
         max-width: 100%;
         width: 100%;
+        min-height: auto;
         position: relative;
         top: 0;
         max-height: none;

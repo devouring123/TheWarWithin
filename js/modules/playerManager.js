@@ -27,6 +27,8 @@ function syncCardsWrapperHeight() {
         requestAnimationFrame(() => {
             const panelHeight = detailsPanel.offsetHeight;
             cardsWrapper.style.maxHeight = panelHeight + 'px';
+            // 스크롤 위치 초기화
+            cardsWrapper.scrollTop = 0;
         });
     }
 }
