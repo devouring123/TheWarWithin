@@ -1,7 +1,7 @@
 // 승률 표시 및 UI 업데이트 모듈
-import { initializeEloSystem, calculateTeamWinRates, getEloSystemStatus } from './eloSystem.js';
-import { getSelectedTeams } from './teamBuilder.js';
-import { initializeBasicWinRateDisplay, triggerBasicWinRateUpdate } from './basicWinRateDisplay.js';
+import { initializeEloSystem, calculateTeamWinRates, getEloSystemStatus } from './eloSystem.js?v=mmr-team-state-basic-winrate-v2';
+import { getSelectedTeams } from './teamBuilder.js?v=mmr-team-state-basic-winrate-v2';
+import { initializeBasicWinRateDisplay, triggerBasicWinRateUpdate } from './basicWinRateDisplay.js?v=mmr-team-state-basic-winrate-v2';
 
 // 승률 표시 상태 관리
 let isEloSystemReady = false;
@@ -56,7 +56,7 @@ function createWinRateDisplayElement() {
                 <div class="card-header bg-primary text-white py-2">
                     <h6 class="mb-0">
                         <i class="fas fa-chart-line me-2"></i>포지션 고려 승률 예측
-                        <small class="text-light ms-2">(ELO + 가중치)</small>
+                        <small class="text-light ms-2">(MMR + 가중치)</small>
                     </h6>
                 </div>
                 <div class="card-body p-3" id="winRateContent">
@@ -233,18 +233,18 @@ function generatePositionalWinRateHTML(positionalWinRate) {
                 </div>
             </div>
             
-            <!-- ELO 정보 -->
+            <!-- MMR 정보 -->
             <div class="row text-center mt-3">
                 <div class="col-6">
                     <small class="text-muted">
                         <i class="fas fa-trophy me-1"></i>
-                        가중 ELO: ${positionalWinRate.team1Rating.toFixed(0)}
+                        가중 MMR: ${positionalWinRate.team1Rating.toFixed(0)}
                     </small>
                 </div>
                 <div class="col-6">
                     <small class="text-muted">
                         <i class="fas fa-trophy me-1"></i>
-                        가중 ELO: ${positionalWinRate.team2Rating.toFixed(0)}
+                        가중 MMR: ${positionalWinRate.team2Rating.toFixed(0)}
                     </small>
                 </div>
             </div>
