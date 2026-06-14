@@ -1,5 +1,7 @@
 import { getPositionName, getPositionIndex, getParticle } from './utils.js';
 import { getTierBadgeHtml } from './uiManager.js';
+import { updatePlayerTier, TIER_OPTIONS } from './gameManager.js?v=mmr-team-state-basic-winrate-v2';
+import { ToastManager } from './toast.js';
 
 let selectedPlayers = []; // 선택된 플레이어를 저장할 배열
 let gameRecords = []; // 게임 기록 데이터를 저장할 배열
@@ -116,6 +118,7 @@ export function handlePlayerClick(playerName) {
     } else if (selectedPlayers.length === 1) {
         console.log("One player selected, showing all player comparison");
         playerDetailsContent.innerHTML = renderAllPlayerComparison(selectedPlayers[0]);
+        setupAnalysisTierEditor();
         playerDetailsDisplayArea.style.display = 'block';
         // 패널 표시 애니메이션
         requestAnimationFrame(() => {
@@ -125,6 +128,7 @@ export function handlePlayerClick(playerName) {
     } else if (selectedPlayers.length === 2) {
         console.log("Two players selected, showing comparison");
         playerDetailsContent.innerHTML = renderComparePlayerDetails(selectedPlayers[0], selectedPlayers[1]);
+        setupAnalysisTierEditor();
         playerDetailsDisplayArea.style.display = 'block';
         // 패널 표시 애니메이션
         requestAnimationFrame(() => {
@@ -332,7 +336,92 @@ export function renderTeammateChart(topTeammates, bottomTeammates) {
     }
 }
 
-function renderAllPlayerComparison(selectedPlayerName) {
+function renderAnalysisTierEditor(player) {
+    const playerName = escapeHtml(player.name);
+    const currentTier = String(player.tier || '').trim();
+
+    return `
+        <div class="analysis-tier-editor" data-tier-editor-for="${playerName}" hidden>
+            <div class="analysis-tier-editor-header">
+                <strong>${playerName} 티어 변경</strong>
+                <button type="button" class="analysis-tier-close" aria-label="티어 변경 창 닫기">×</button>
+            </div>
+            <div class="analysis-tier-buttons" role="group" aria-label="${playerName} 티어 선택">
+                ${TIER_OPTIONS.map(tier => {
+                    const activeClass = tier === currentTier ? 'active' : '';
+                    const pressed = tier === currentTier ? 'true' : 'false';
+                    return `<button type="button" class="analysis-tier-option ${activeClass}" data-tier-player="${playerName}" data-tier-value="${escapeHtml(tier)}" aria-pressed="${pressed}">${escapeHtml(tier)}</button>`;
+                }).join('')}
+            </div>
+        </div>
+    `;
+}
+
+function setupAnalysisTierEditor() {
+    const trigger = document.querySelector('.analysis-tier-trigger');
+    const editor = document.querySelector('.analysis-tier-editor');
+    const closeButton = document.querySelector('.analysis-tier-close');
+
+    if (!trigger || !editor) return;
+
+    trigger.addEventListener('click', event => {
+        event.preventDefault();
+        event.stopPropagation();
+        const willOpen = editor.hasAttribute('hidden');
+        editor.toggleAttribute('hidden', !willOpen);
+        trigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    });
+
+    if (closeButton) {
+        closeButton.addEventListener('click', event => {
+            event.preventDefault();
+            event.stopPropagation();
+            editor.setAttribute('hidden', '');
+            trigger.setAttribute('aria-expanded', 'false');
+        });
+    }
+
+    editor.querySelectorAll('.analysis-tier-option').forEach(button => {
+        button.addEventListener('click', async event => {
+            event.preventDefault();
+            event.stopPropagation();
+
+            const playerName = event.currentTarget.dataset.tierPlayer;
+            const tier = event.currentTarget.dataset.tierValue;
+            const player = gameData?.players?.find(item => item.name === playerName);
+
+            if (!player || player.tier === tier) {
+                return;
+            }
+
+            const buttons = Array.from(editor.querySelectorAll('.analysis-tier-option'));
+            buttons.forEach(item => item.disabled = true);
+
+            try {
+                await updatePlayerTier(playerName, tier);
+                ToastManager.success('화면을 새로고침합니다.');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 900);
+            } catch (error) {
+                console.error('티어 수정 실패:', error);
+                ToastManager.error(`티어 수정 실패: ${error.message}`);
+                buttons.forEach(item => item.disabled = false);
+            }
+        });
+    });
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+export function renderAllPlayerComparison(selectedPlayerName) {
     console.log("renderAllPlayerComparison called with:", selectedPlayerName);
     const selectedPlayer = gameData.players.find(p => p.name === selectedPlayerName);
     if (!selectedPlayer) {
@@ -468,7 +557,14 @@ function renderAllPlayerComparison(selectedPlayerName) {
     // HTML 생성
     let html = `
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4 class="mb-0">${selectedPlayer.name} ${getTierBadgeHtml(selectedPlayer.tier)} - 전적 분석</h4>
+            <h4 class="mb-0 player-analysis-title">
+                ${selectedPlayer.name}
+                <button type="button" class="analysis-tier-trigger" data-tier-player="${escapeHtml(selectedPlayer.name)}" aria-expanded="false" title="티어 수정">
+                    ${getTierBadgeHtml(selectedPlayer.tier)}
+                    <span class="analysis-tier-trigger-text">티어 수정</span>
+                </button>
+                - 전적 분석
+            </h4>
             <span>
                 전체 전적: ${selectedPlayer.total_wins}승 ${selectedPlayer.total_losses}패 (${(selectedPlayer.overall_winrate * 100).toFixed(1)}%)
                 <span class="ms-3">
@@ -477,6 +573,8 @@ function renderAllPlayerComparison(selectedPlayerName) {
                 </span>
             </span>
         </div>
+
+        ${renderAnalysisTierEditor(selectedPlayer)}
 
         <div class="player-tags-section mb-4">
             <h5><i class="fas fa-tags me-2"></i>획득 태그</h5>
