@@ -3,11 +3,55 @@
 
 // ELO 시스템 상수
 const ELO_CONSTANTS = {
-    DEFAULT_RATING: 1500,           // 기본 ELO 레이팅
+    DEFAULT_RATING: 1000,           // 기본 ELO 레이팅 (골드 기준)
     K_FACTOR: 32,                   // K-팩터 (변동폭)
     SCALING_FACTOR: 400,            // 레이팅 차이 스케일링
-    MIN_RATING: 800,                // 최소 레이팅
-    MAX_RATING: 3000                // 최대 레이팅
+    PERSONAL_ADJUSTMENT_FACTOR: 800, // 개인 MMR과 팀 평균 차이에 따른 보정 완충값
+    MIN_PERSONAL_MULTIPLIER: 0.5,    // 개인 보정 최소 배율
+    MAX_PERSONAL_MULTIPLIER: 1.5,    // 개인 보정 최대 배율
+    LANE_ADJUSTMENT_FACTOR: 10000,   // 라인 MMR 차이 보정 완충값 (100점 = 1%)
+    MIN_LANE_FACTOR: 0.95,           // 라인 보정 최소 배율
+    MAX_LANE_FACTOR: 1.05,           // 라인 보정 최대 배율
+    MIN_RATING: 400,                // 최소 레이팅
+    MAX_RATING: 2200                // 최대 레이팅
+};
+
+const POSITION_KEYS = ['top', 'jungle', 'mid', 'adc', 'support'];
+
+// LoL 티어별 기본 MMR (Riot의 hidden MMR은 비공개이므로 골드 1000 기준 앱 내부값으로 사용)
+const TIER_BASE_RATINGS = {
+    '아이언': 700,
+    'iron': 700,
+    '브론즈': 800,
+    'bronze': 800,
+    '실버': 900,
+    'silver': 900,
+    '골드': 1000,
+    'gold': 1000,
+    '플래티넘': 1100,
+    '플레': 1100,
+    '플': 1100,
+    'platinum': 1100,
+    '에메랄드': 1200,
+    '에': 1200,
+    'emerald': 1200,
+    '다이아몬드': 1350,
+    '다이아': 1350,
+    '다': 1350,
+    'diamond': 1350,
+    '마스터': 1550,
+    '마': 1550,
+    'master': 1550,
+    '그랜드마스터': 1750,
+    '그마': 1750,
+    'grandmaster': 1750,
+    '챌린저': 1900,
+    '챌': 1900,
+    'challenger': 1900,
+    '언랭크': 1000,
+    '언랭': 1000,
+    '언': 1000,
+    'unranked': 1000
 };
 
 // 포지션별 영향도 가중치 (미드 > 정글 > 서폿 > 탑 > 원딜)
@@ -43,6 +87,14 @@ class EloRatingManager {
         this.playerRatings.set(playerName, clampedRating);
     }
 
+    // 플레이어 티어 기반 기본 MMR 계산
+    getDefaultRatingForTier(tier) {
+        if (!tier) return ELO_CONSTANTS.DEFAULT_RATING;
+
+        const normalizedTier = String(tier).trim().toLowerCase().replace(/\s/g, '');
+        return TIER_BASE_RATINGS[normalizedTier] || ELO_CONSTANTS.DEFAULT_RATING;
+    }
+
     // 모든 플레이어 레이팅 가져오기
     getAllRatings() {
         return Object.fromEntries(this.playerRatings);
@@ -54,7 +106,7 @@ class EloRatingManager {
         
         // 모든 플레이어 기본 레이팅으로 초기화
         gameData.players.forEach(player => {
-            this.setPlayerRating(player.name, ELO_CONSTANTS.DEFAULT_RATING);
+            this.setPlayerRating(player.name, this.getDefaultRatingForTier(player.tier));
         });
 
         // 게임 기록을 시간순으로 처리하여 ELO 계산
@@ -223,10 +275,10 @@ class EloSystem {
     updateRatingsFromGameResult(winners, losers) {
         if (!this.isInitialized) {
             console.warn('ELO 시스템이 초기화되지 않았습니다.');
-            return;
+            return {};
         }
 
-        this.ratingManager.updateRatingsFromGameResult(winners, losers);
+        return this.ratingManager.updateRatingsFromGameResult(winners, losers);
     }
 
     // 플레이어 개별 레이팅 조회
@@ -256,39 +308,169 @@ class EloSystem {
     }
 }
 
-// ELO 레이팅 업데이트 함수를 EloRatingManager에 추가
-EloRatingManager.prototype.updateRatingsFromGameResult = function(winners, losers) {
-    // 팀별 평균 레이팅 계산
-    const winnersRating = EloCalculator.calculateTeamAverageRating(winners, this);
-    const losersRating = EloCalculator.calculateTeamAverageRating(losers, this);
-    
-    // 예상 승률 계산
+function getValidPlayerNames(players) {
+    return players.filter(playerName => playerName && playerName.trim());
+}
+
+function clampPersonalMultiplier(multiplier) {
+    return Math.max(
+        ELO_CONSTANTS.MIN_PERSONAL_MULTIPLIER,
+        Math.min(ELO_CONSTANTS.MAX_PERSONAL_MULTIPLIER, multiplier)
+    );
+}
+
+function clampLaneFactor(multiplier) {
+    return Math.max(
+        ELO_CONSTANTS.MIN_LANE_FACTOR,
+        Math.min(ELO_CONSTANTS.MAX_LANE_FACTOR, multiplier)
+    );
+}
+
+function roundRatingDelta(delta) {
+    return Math.round(delta * 100) / 100;
+}
+
+function roundMultiplier(multiplier) {
+    return Math.round((multiplier + Number.EPSILON) * 100) / 100;
+}
+
+function formatSignedNumber(value, digits = 0) {
+    const rounded = Number(value).toFixed(digits);
+    return value > 0 ? `+${rounded}` : rounded;
+}
+
+function getLaneContext(ratingManager, playerName, teamPlayers, opponentPlayers) {
+    if (teamPlayers.length !== 5 || opponentPlayers.length !== 5) {
+        return {
+            position: null,
+            laneOpponent: null,
+            laneOpponentRating: null,
+            laneDiff: 0,
+            hasLaneInfo: false
+        };
+    }
+
+    const playerIndex = teamPlayers.indexOf(playerName);
+    if (playerIndex < 0 || playerIndex >= 5) {
+        return {
+            position: null,
+            laneOpponent: null,
+            laneOpponentRating: null,
+            laneDiff: 0,
+            hasLaneInfo: false
+        };
+    }
+
+    const laneOpponent = opponentPlayers[playerIndex];
+    const laneOpponentRating = ratingManager.getPlayerRating(laneOpponent);
+    const playerRating = ratingManager.getPlayerRating(playerName);
+
+    return {
+        position: POSITION_KEYS[playerIndex],
+        laneOpponent,
+        laneOpponentRating,
+        laneDiff: Math.round(playerRating - laneOpponentRating),
+        hasLaneInfo: true
+    };
+}
+
+function calculatePlayerChange(ratingManager, playerName, teamRating, opponentTeamRating, baseDelta, isWinner, laneContext) {
+    const before = ratingManager.getPlayerRating(playerName);
+    const ratingGapFromTeam = before - teamRating;
+    const rawMultiplier = isWinner
+        ? 1 - (ratingGapFromTeam / ELO_CONSTANTS.PERSONAL_ADJUSTMENT_FACTOR)
+        : 1 + (ratingGapFromTeam / ELO_CONSTANTS.PERSONAL_ADJUSTMENT_FACTOR);
+    const personalMultiplier = roundMultiplier(clampPersonalMultiplier(rawMultiplier));
+    const laneResponsibility = laneContext.hasLaneInfo
+        ? (isWinner ? -laneContext.laneDiff : laneContext.laneDiff)
+        : 0;
+    const rawLaneFactor = 1 + laneResponsibility / ELO_CONSTANTS.LANE_ADJUSTMENT_FACTOR;
+    const laneFactor = roundMultiplier(clampLaneFactor(rawLaneFactor));
+    const multiplier = roundMultiplier(personalMultiplier * laneFactor);
+    const exactDelta = baseDelta * multiplier;
+    const delta = roundRatingDelta(exactDelta);
+    const finalDeltaDisplay = Math.round(delta);
+    const teamDiff = Math.round(opponentTeamRating - teamRating);
+    const playerTeamDiff = Math.round(before - teamRating);
+
+    return {
+        before,
+        after: before + delta,
+        delta,
+        multiplier,
+        exactDelta: roundRatingDelta(exactDelta),
+        baseDelta: roundRatingDelta(baseDelta),
+        personalMultiplier,
+        laneFactor,
+        teamDiff,
+        playerTeamDiff,
+        position: laneContext.position,
+        laneOpponent: laneContext.laneOpponent,
+        laneOpponentRating: laneContext.laneOpponentRating,
+        laneDiff: laneContext.laneDiff,
+        hasLaneInfo: laneContext.hasLaneInfo,
+        formulaText: `기본 ${formatSignedNumber(baseDelta, 2)} × 개인 ${personalMultiplier.toFixed(2)} × 라인 ${laneFactor.toFixed(2)} = ${formatSignedNumber(baseDelta, 2)} × 최종배율 ${multiplier.toFixed(2)} = ${formatSignedNumber(exactDelta, 2)} => ${formatSignedNumber(finalDeltaDisplay)}`
+        };
+}
+
+function calculatePersonalizedRatingChanges(ratingManager, winners, losers) {
+    const validWinners = getValidPlayerNames(winners);
+    const validLosers = getValidPlayerNames(losers);
+    const winnersRating = EloCalculator.calculateTeamAverageRating(validWinners, ratingManager);
+    const losersRating = EloCalculator.calculateTeamAverageRating(validLosers, ratingManager);
     const expectedWinnerProb = EloCalculator.calculateBasicWinProbability(winnersRating, losersRating);
     const expectedLoserProb = 1 - expectedWinnerProb;
-    
-    // 실제 결과 (승자 = 1, 패자 = 0)
-    const actualWinnerScore = 1;
-    const actualLoserScore = 0;
-    
-    // 각 플레이어별 레이팅 업데이트
-    winners.forEach(playerName => {
-        if (playerName && playerName.trim()) {
-            const currentRating = this.getPlayerRating(playerName);
-            const newRating = currentRating + ELO_CONSTANTS.K_FACTOR * (actualWinnerScore - expectedWinnerProb);
-            this.setPlayerRating(playerName, newRating);
-        }
+    const winnerBaseDelta = ELO_CONSTANTS.K_FACTOR * (1 - expectedWinnerProb);
+    const loserBaseDelta = ELO_CONSTANTS.K_FACTOR * (0 - expectedLoserProb);
+    const changes = {};
+
+    validWinners.forEach(playerName => {
+        const laneContext = getLaneContext(ratingManager, playerName, validWinners, validLosers);
+        changes[playerName] = calculatePlayerChange(ratingManager, playerName, winnersRating, losersRating, winnerBaseDelta, true, laneContext);
     });
-    
-    losers.forEach(playerName => {
-        if (playerName && playerName.trim()) {
-            const currentRating = this.getPlayerRating(playerName);
-            const newRating = currentRating + ELO_CONSTANTS.K_FACTOR * (actualLoserScore - expectedLoserProb);
-            this.setPlayerRating(playerName, newRating);
-        }
+
+    validLosers.forEach(playerName => {
+        const laneContext = getLaneContext(ratingManager, playerName, validLosers, validWinners);
+        changes[playerName] = calculatePlayerChange(ratingManager, playerName, losersRating, winnersRating, loserBaseDelta, false, laneContext);
     });
-    
+
+    return {
+        changes,
+        winnersRating,
+        losersRating
+    };
+}
+
+// ELO 레이팅 업데이트 함수를 EloRatingManager에 추가
+EloRatingManager.prototype.updateRatingsFromGameResult = function(winners, losers) {
+    const { changes, winnersRating, losersRating } = calculatePersonalizedRatingChanges(this, winners, losers);
+
+    Object.entries(changes).forEach(([playerName, change]) => {
+        this.setPlayerRating(playerName, change.after);
+        change.after = this.getPlayerRating(playerName);
+        change.delta = roundRatingDelta(change.after - change.before);
+    });
+
     console.log(`ELO 업데이트 완료: 승자팀 평균 ${winnersRating.toFixed(1)} → 패자팀 평균 ${losersRating.toFixed(1)}`);
+
+    return changes;
 };
+
+export function calculateMatchMmrChanges(gameData, gameRecords = []) {
+    const replaySystem = new EloSystem();
+    replaySystem.initialize(gameData, []);
+
+    return gameRecords.map(record => {
+        if (!record.winners || !record.losers || record.winners.length !== 5 || record.losers.length !== 5) {
+            return { ...record, mmrChanges: {} };
+        }
+
+        return {
+            ...record,
+            mmrChanges: replaySystem.updateRatingsFromGameResult(record.winners, record.losers)
+        };
+    });
+}
 
 // 글로벌 ELO 시스템 인스턴스
 const globalEloSystem = new EloSystem();
@@ -298,6 +480,7 @@ export {
     EloSystem,
     EloCalculator,
     ELO_CONSTANTS,
+    TIER_BASE_RATINGS,
     POSITION_WEIGHTS,
     globalEloSystem
 };
@@ -318,6 +501,14 @@ export function calculateTeamWinRates(team1Players, team2Players, withPositions 
 
 export function getEloSystemStatus() {
     return globalEloSystem.getSystemStatus();
+}
+
+export function getPlayerMmr(playerName) {
+    return Math.round(globalEloSystem.getPlayerRating(playerName));
+}
+
+export function getAllPlayerMmrs() {
+    return globalEloSystem.getAllRatings();
 }
 
 export function updateEloRatings(winners, losers) {

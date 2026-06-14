@@ -1,5 +1,6 @@
 // 대기석 아래에 표시되는 기본 승률 표시 모듈
-import { calculateTeamWinRates } from './eloSystem.js';
+import { calculateTeamWinRates } from './eloSystem.js?v=mmr-team-state-basic-winrate-v2';
+import { getAllTeamPlayers } from './teamBuilder.js?v=mmr-team-state-basic-winrate-v2';
 
 // 기본 승률 표시 초기화
 export function initializeBasicWinRateDisplay() {
@@ -107,35 +108,6 @@ export function triggerBasicWinRateUpdate() {
     const team2Players = getAllTeamPlayers('team2');
     
     updateBasicWinRateDisplay(team1Players, team2Players);
-}
-
-// 대기석 플레이어 목록 가져오기
-function getWaitingPlayers(teamId) {
-    const waitingArea = document.getElementById(`${teamId}Waiting`);
-    if (!waitingArea) return [];
-    
-    const playerButtons = waitingArea.querySelectorAll('.waiting-player-btn');
-    return Array.from(playerButtons).map(btn => btn.textContent.trim()).filter(name => name.length > 0);
-}
-
-// 포지션 배치된 플레이어 목록 가져오기
-function getPositionPlayers(teamId) {
-    const positionsContainer = document.getElementById(`${teamId}Positions`);
-    if (!positionsContainer) return [];
-    
-    const positionSlots = positionsContainer.querySelectorAll('.position-slot .player-name');
-    return Array.from(positionSlots)
-        .map(slot => slot.textContent.trim())
-        .filter(name => name.length > 0 && name !== '-');
-}
-
-// 전체 팀 플레이어 가져오기 (대기석 + 포지션 배치)
-function getAllTeamPlayers(teamId) {
-    const waitingPlayers = getWaitingPlayers(teamId);
-    const positionPlayers = getPositionPlayers(teamId);
-    
-    // 두 배열을 합쳐서 전체 팀 구성 반환
-    return [...waitingPlayers, ...positionPlayers];
 }
 
 // 추가 스타일 - 다크/라이트 모드 지원

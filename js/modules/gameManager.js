@@ -1,12 +1,26 @@
-import CONFIG from './config.js';
-import { updateConfig, updateScriptURL, getConfig } from './config.js';
-import { parseCSVData, parseRecordsCSV } from './dataManager.js';
-import { SpinnerManager } from './uiManager.js';
-import { updateEloAfterGame } from './winRateDisplay.js';
+import CONFIG from './config.js?v=mmr-team-state-basic-winrate-v2';
+import { updateConfig, updateScriptURL, getConfig } from './config.js?v=mmr-team-state-basic-winrate-v2';
+import { parseCSVData, parseRecordsCSV } from './dataManager.js?v=mmr-team-state-basic-winrate-v2';
+import { SpinnerManager } from './uiManager.js?v=mmr-team-state-basic-winrate-v2';
+import { updateEloAfterGame } from './winRateDisplay.js?v=mmr-team-state-basic-winrate-v2';
 import { ToastManager } from './toast.js';
 
 let gameData = null;
 let gameRecords = []; // 게임 기록 데이터를 저장할 배열
+
+export const TIER_OPTIONS = [
+    '언랭',
+    '아이언',
+    '브론즈',
+    '실버',
+    '골드',
+    '플래티넘',
+    '에메랄드',
+    '다이아',
+    '마스터',
+    '그랜드 마스터',
+    '챌린저'
+];
 
 // URL에서 쿼리 파라미터 가져오기
 function getQueryParams() {
@@ -24,7 +38,6 @@ function getStoredConfig() {
         const storedScriptId = localStorage.getItem('scriptId');
         const storedSheetGid = localStorage.getItem('sheetGid');
         const storedRecordsGid = localStorage.getItem('recordsGid');
-
         // 모든 설정 값이 있어야 함
         if (storedSpreadsheetId && storedScriptId && storedSheetGid && storedRecordsGid) {
             return {
@@ -80,7 +93,6 @@ function showConfigForm() {
 
                 const sheetGid = String(data.sheetGid);
                 const recordsGid = String(data.recordsGid);
-
                 // 설정 업데이트
                 updateConfig({
                     SPREADSHEET_ID: queryParams.spreadsheetId,
@@ -150,7 +162,6 @@ function showConfigForm() {
 
                 const sheetGid = String(data.sheetGid);
                 const recordsGid = String(data.recordsGid);
-
                 // 설정 업데이트
                 updateConfig({
                     SPREADSHEET_ID: storedConfig.spreadsheetId,
@@ -256,7 +267,6 @@ function showConfigForm() {
 
                 const sheetGid = String(data.sheetGid);
                 const recordsGid = String(data.recordsGid);
-
                 // 설정 업데이트
                 updateConfig({
                     SPREADSHEET_ID: spreadsheetId,
@@ -544,4 +554,63 @@ export function showError(message) {
         </div>
     `;
     configContainer.style.display = 'flex';
+}
+
+export async function updatePlayerTier(playerName, tier) {
+    const normalizedPlayerName = String(playerName || '').trim();
+    const normalizedTier = String(tier || '').trim();
+
+    if (!normalizedPlayerName) {
+        throw new Error('플레이어 이름이 비어 있습니다.');
+    }
+
+    if (!TIER_OPTIONS.includes(normalizedTier)) {
+        throw new Error(`지원하지 않는 티어입니다: ${normalizedTier}`);
+    }
+
+    if (!window.CONFIG.GOOGLE_APPS_SCRIPT_URL) {
+        const queryParams = getQueryParams();
+        if (queryParams.scriptId) {
+            updateScriptURL(queryParams.scriptId);
+        } else {
+            const storedConfig = getStoredConfig();
+            if (storedConfig && storedConfig.scriptId) {
+                updateScriptURL(storedConfig.scriptId);
+            }
+        }
+
+    }
+
+    if (!window.CONFIG.GOOGLE_APPS_SCRIPT_URL) {
+        throw new Error('Google Apps Script URL이 설정되지 않았습니다. scriptId 파라미터를 확인해주세요.');
+    }
+
+    const requestBody = {
+        action: 'updatePlayerTier',
+        playerName: normalizedPlayerName,
+        tier: normalizedTier
+    };
+
+    const response = await fetch(window.CONFIG.GOOGLE_APPS_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+            'Content-Type': 'text/plain;charset=utf-8'
+        },
+        body: JSON.stringify(requestBody)
+    });
+
+    const responseText = await response.text();
+
+    if (responseText.startsWith('<')) {
+        throw new Error('서버에서 HTML 응답이 반환되었습니다. 웹 앱 설정을 확인해주세요.');
+    }
+
+    const result = JSON.parse(responseText);
+
+    if (!result.success) {
+        throw new Error(result.error || '티어 수정 중 알 수 없는 오류가 발생했습니다.');
+    }
+
+    return result;
 }

@@ -1,8 +1,22 @@
 // ============================================
 // 공통 설정 - 여기만 수정하면 됩니다
 // ============================================
-const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID';
+const SPREADSHEET_ID = '1sJ7tQw3Ufy50Ih1DOEYxBtlCPNuZoGcd8serBRwbAkU';
+const TIER_SHEET_NAME = '티어표';
 const RECORDS_SHEET_NAME = '기록';
+const ALLOWED_TIERS = [
+    '언랭',
+    '아이언',
+    '브론즈',
+    '실버',
+    '골드',
+    '플래티넘',
+    '에메랄드',
+    '다이아',
+    '마스터',
+    '그랜드 마스터',
+    '챌린저'
+];
 
 // Preflight OPTIONS 요청을 처리하기 위한 함수
 function doOptions(e) {
@@ -26,6 +40,10 @@ function doPost(e) {
 
         // POST 요청 데이터 파싱
         const data = JSON.parse(e.postData.contents);
+
+        if (data.action === 'updatePlayerTier') {
+            return updatePlayerTier(data);
+        }
 
         // === 필수: rows 배열만 받는다 ===
         if (!Array.isArray(data.rows)) {
@@ -104,6 +122,55 @@ function doPost(e) {
 
         return errorResponse;
     }
+}
+
+function updatePlayerTier(data) {
+    const playerName = String(data.playerName || '').trim();
+    const tier = String(data.tier || '').trim();
+
+    if (!playerName) {
+        throw new Error('플레이어 이름이 비어 있습니다.');
+    }
+
+    if (ALLOWED_TIERS.indexOf(tier) === -1) {
+        throw new Error('지원하지 않는 티어입니다: ' + tier);
+    }
+
+    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const tierSheet = spreadsheet.getSheetByName(TIER_SHEET_NAME);
+
+    if (!tierSheet) {
+        throw new Error("'" + TIER_SHEET_NAME + "' 시트를 찾을 수 없습니다.");
+    }
+
+    const values = tierSheet.getDataRange().getValues();
+    const matchingRows = [];
+
+    for (let i = 0; i < values.length; i++) {
+        const rowName = values[i][0] === null || values[i][0] === undefined ? '' : String(values[i][0]).trim();
+        if (rowName === playerName) {
+            matchingRows.push(i + 1);
+        }
+    }
+
+    if (matchingRows.length > 1) {
+        throw new Error('동일한 이름의 플레이어가 여러 명입니다: ' + playerName);
+    }
+
+    const targetRow = matchingRows.length === 0 ? tierSheet.getLastRow() + 1 : matchingRows[0];
+    tierSheet.getRange(targetRow, 1, 1, 2).setValues([[playerName, tier]]);
+
+    return ContentService
+        .createTextOutput(JSON.stringify({
+            success: true,
+            message: '티어가 성공적으로 수정되었습니다.',
+            playerName: playerName,
+            tier: tier,
+            row: targetRow,
+            created: matchingRows.length === 0,
+            timestamp: new Date().toISOString()
+        }))
+        .setMimeType(ContentService.MimeType.JSON);
 }
 
 // GET 요청 처리 - 시트 목록 및 GID 반환

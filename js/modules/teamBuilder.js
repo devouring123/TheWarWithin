@@ -444,6 +444,13 @@ export function getSelectedTeams() {
     };
 }
 
+// 현재 팀의 전체 플레이어 반환 (대기석 + 포지션 배치)
+export function getAllTeamPlayers(teamId) {
+    const waitingPlayers = currentTeams[teamId] || [];
+    const assignedPlayers = positionPlayers[teamId] || [];
+    return [...waitingPlayers, ...assignedPlayers.filter(player => player !== null)];
+}
+
 // 드래그 앤 드롭 이벤트 설정 함수
 function setupDragAndDrop(slot, teamId, index) {
     // 모든 위치가 채워졌는지 확인

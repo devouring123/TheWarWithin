@@ -51,7 +51,7 @@ export function parseGoogleSheetsData(values) {
         
         try {
             const name = row[0].trim();
-            const tier = row[1] ? row[1].trim() : '언랭';
+            const tier = row[1] ? row[1].trim() : '';
             const totalGames = safeInt(row[2]);
             const overallWinrate = parsePercentage(row[3]);
             

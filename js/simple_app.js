@@ -1,9 +1,9 @@
 // 모듈 임포트
-import { setupEventListeners, toggleCompactMode, SpinnerManager } from './modules/uiManager.js';
-import { loadData, showError, hideLoading } from './modules/gameManager.js';
-import { renderOverviewStats, renderStatsTable, renderPlayersList, renderCharts, updateLastUpdated, renderMatchHistory, showCaptureButton } from './modules/uiManager.js';
+import { setupEventListeners, toggleCompactMode, SpinnerManager } from './modules/uiManager.js?v=mmr-team-state-basic-winrate-v2';
+import { loadData, showError, hideLoading } from './modules/gameManager.js?v=mmr-team-state-basic-winrate-v2';
+import { renderOverviewStats, renderStatsTable, renderPlayersList, renderCharts, updateLastUpdated, renderMatchHistory, showCaptureButton } from './modules/uiManager.js?v=mmr-team-state-basic-winrate-v2';
 import { handlePlayerClick, clearPlayerSelection, selectPlayerFromGlossary, getSelectedPlayers, setGameRecords, setGameData, renderRivalChart, renderTeammateChart, renderDuoSynergyRanking } from './modules/playerManager.js';
-import { initializeWinRateSystem, updateWinRateDisplay } from './modules/winRateDisplay.js';
+import { initializeWinRateSystem, updateWinRateDisplay } from './modules/winRateDisplay.js?v=mmr-team-state-basic-winrate-v2';
 import { initializePlayerPicker } from './modules/playerPicker.js';
 import { setGameDataForTeamBuilder } from './modules/teamBuilder.js';
 import { ToastManager, showSuccess, showError as showToastError, showWarning, showInfo, initTooltips } from './modules/toast.js';
@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', function () {
             window.clearPlayerSelection = clearPlayerSelection;
             window.selectPlayerFromGlossary = selectPlayerFromGlossary;
             window.refreshData = refreshData;
+            window.reinitializeWinRateSystem = initializeWinRateSystem;
             window.renderRivalChart = renderRivalChart;
             window.renderTeammateChart = renderTeammateChart;
             window.addPlayerToInput = window.addPlayerToInput; // playerPicker에서 설정됨
@@ -64,6 +65,8 @@ async function initializeApp() {
         const { gameData: data, gameRecords: records } = await loadData(); // 기본값으로 true 사용
         gameData = data;
         gameRecords = records;
+        window.gameData = gameData;
+        window.gameRecords = gameRecords;
 
         // playerManager에 데이터 설정
         setGameData(gameData);
@@ -72,6 +75,9 @@ async function initializeApp() {
         // teamBuilder에 데이터 설정
         setGameDataForTeamBuilder(gameData);
 
+        // ELO 기반 MMR/승률 시스템 초기화
+        initializeWinRateSystem(gameData, gameRecords);
+
         // UI 업데이트
         hideLoading();
         renderOverviewStats(gameData);
@@ -79,9 +85,6 @@ async function initializeApp() {
         renderPlayersList(gameData, getSelectedPlayers(), handlePlayerClick);
         renderCharts(gameData);
         updateLastUpdated(gameData);
-
-        // ELO 기반 승률 시스템 초기화
-        initializeWinRateSystem(gameData, gameRecords);
 
         // 플레이어 피커 초기화
         initializePlayerPicker(gameData, gameRecords);
@@ -107,6 +110,8 @@ async function refreshData() {
         const { gameData: data, gameRecords: records } = await loadData(false); // 새로고침 시에는 설정 폼 표시하지 않음
         gameData = data;
         gameRecords = records;
+        window.gameData = gameData;
+        window.gameRecords = gameRecords;
 
         // playerManager에 데이터 설정
         setGameData(gameData);
@@ -114,6 +119,9 @@ async function refreshData() {
 
         // teamBuilder에 데이터 설정
         setGameDataForTeamBuilder(gameData);
+
+        // ELO 기반 MMR/승률 시스템 재초기화
+        initializeWinRateSystem(gameData, gameRecords);
 
         // UI 업데이트
         hideLoading();
