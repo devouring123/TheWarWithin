@@ -1,8 +1,8 @@
 import { getWinrateClass, getPositionName } from './utils.js';
-import { handleTeamWin as handleTeamWinGame, addToGoogleSheetsRecord } from './gameManager.js';
+import { handleTeamWin as handleTeamWinGame, addToGoogleSheetsRecord } from './gameManager.js?v=mmr-team-state-basic-winrate-v2';
 import { clearPlayerSelection, getRecentFormHtml, getSelectedPlayers, getPlayerTagsHtml, renderTagGlossary } from './playerManager.js';
-import { setupTeamBuilder, clearTeamSelection, getSelectedTeams, resetToWaitingAreaWithTeams } from './teamBuilder.js';
-import { ToastManager } from './toast.js';
+import { setupTeamBuilder, clearTeamSelection, getSelectedTeams, resetToWaitingAreaWithTeams } from './teamBuilder.js?v=mmr-team-state-basic-winrate-v2';
+import { getPlayerMmr, calculateMatchMmrChanges } from './eloSystem.js?v=mmr-team-state-basic-winrate-v2';
 
 // MVP/ACE 선택 관련 전역 변수
 let selectedMvp = null;
@@ -155,7 +155,7 @@ function updateCompactModeButton() {
 
 // 티어별 색상과 첫 글자 매핑 함수
 function getTierInfo(tier) {
-    const tierName = tier.toLowerCase().replace(/\s/g, '');
+    const tierName = String(tier || '').toLowerCase().replace(/\s/g, '');
     
     // 티어별 정보 매핑 (첫 글자, 색상, 텍스트 색상)
     const tierMappings = {
@@ -173,10 +173,12 @@ function getTierInfo(tier) {
         '에메랄드': { char: '에', bgColor: '#50C878', textColor: '#FFFFFF' }, // 에메랄드색
         'emerald': { char: 'E', bgColor: '#50C878', textColor: '#FFFFFF' },
         '다이아몬드': { char: '다', bgColor: '#B9F2FF', textColor: '#000000' }, // 다이아몬드 색상 (하늘색)
+        '다이아': { char: '다', bgColor: '#B9F2FF', textColor: '#000000' },
         'diamond': { char: 'D', bgColor: '#B9F2FF', textColor: '#000000' },
         '마스터': { char: '마', bgColor: '#9932CC', textColor: '#FFFFFF' }, // 보라색
         'master': { char: 'M', bgColor: '#9932CC', textColor: '#FFFFFF' },
         '그랜드마스터': { char: '그마', bgColor: '#FF4500', textColor: '#FFFFFF' }, // 주황빨강
+        '그랜드마스터': { char: '그마', bgColor: '#FF4500', textColor: '#FFFFFF' },
         'grandmaster': { char: 'GM', bgColor: '#FF4500', textColor: '#FFFFFF' },
         '챌린저': { char: '챌', bgColor: '#87CEEB', textColor: '#000000' }, // 하늘 파랑색
         'challenger': { char: 'C', bgColor: '#87CEEB', textColor: '#000000' }
@@ -188,9 +190,11 @@ function getTierInfo(tier) {
 // 티어 배지 HTML 생성 함수
 export function getTierBadgeHtml(tier) {
     const tierInfo = getTierInfo(tier);
-    const tierClass = tier.toLowerCase().replace(/\s/g, '');
+    const tierText = String(tier || '').trim();
+    const tierClass = tierText ? tierText.toLowerCase().replace(/\s/g, '') : 'none';
+    const title = tierText || '티어 없음';
 
-    return `<span class="tier-badge tier-${tierClass}" title="${tier}">${tierInfo.char}</span>`;
+    return `<span class="tier-badge tier-${tierClass}" title="${title}">${tierInfo.char}</span>`;
 }
 
 // 전체 현황 렌더링 (평균 게임/플레이어 제거)
@@ -209,6 +213,20 @@ export function renderOverviewStats(gameData) {
             <div class="stat-card">
                 <h3><i class="fas fa-gamepad me-2"></i>${stats.total_games}</h3>
                 <p class="mb-0">총 게임 수</p>
+            </div>
+        </div>
+        <div class="col-12 mb-3">
+            <div class="stat-card mmr-formula-card text-start">
+                <h5 class="mb-2"><i class="fas fa-square-root-variable me-2"></i>MMR 계산 공식</h5>
+                <p class="mb-2 small text-muted">Riot 숨은 MMR이 아닌 앱 내부 추정 MMR입니다. 기본 MMR: 골드 1000</p>
+                <div class="mmr-formula-main mb-2">
+                    최종 변동량 = <strong>팀 기대승률 기반 기본 변동폭</strong> × <strong>팀 내 개인 배율</strong> × <strong>라인 보정</strong>
+                </div>
+                <ul class="mb-0 small mmr-formula-list">
+                    <li><strong>팀 MMR 차이</strong>: 상대팀 평균과 우리팀 평균 차이로 기본 변동폭을 정합니다.</li>
+                    <li><strong>팀 내 개인 MMR</strong>: 팀 평균보다 낮으면 승리 보상이 커지고, 높으면 패배 손실이 커집니다.</li>
+                    <li><strong>라인 보정</strong>: 같은 라인 상대보다 낮은 MMR로 이기면 더 받고, 높은 MMR로 지면 더 잃습니다. 보정폭은 ±5%입니다.</li>
+                </ul>
             </div>
         </div>
     `;
@@ -286,6 +304,7 @@ export function renderStatsTable(gameData) {
             case 'name': return player.name;
             case 'tier': return getTierRank(player.tier);
             case 'games': return player.total_games;
+            case 'mmr': return getPlayerMmr(player.name);
             case 'winrate': return player.overall_winrate;
             case 'top': return player.positions.top.games > 0 ? player.positions.top.wins / player.positions.top.games : -1;
             case 'jungle': return player.positions.jungle.games > 0 ? player.positions.jungle.wins / player.positions.jungle.games : -1;
@@ -324,6 +343,7 @@ export function renderStatsTable(gameData) {
                 <th class="text-center">순위</th>
                 <th class="text-center sortable-header" data-sort="name">이름${getSortIcon('name')}</th>
                 <th class="text-center sortable-header" data-sort="tier">티어${getSortIcon('tier')}</th>
+                <th class="text-center sortable-header" data-sort="mmr">MMR${getSortIcon('mmr')}</th>
                 <th class="text-center sortable-header" data-sort="games">게임${getSortIcon('games')}</th>
                 <th class="text-center sortable-header" data-sort="winrate">승률${getSortIcon('winrate')}</th>
                 <th class="text-center sortable-header" data-sort="top"><img src="img/positions/Top.svg" alt="TOP" class="position-header-icon" title="TOP">${getSortIcon('top')}</th>
@@ -399,6 +419,7 @@ export function renderStatsTable(gameData) {
                 <td class="text-center ${rankClass}">${rankDisplay}</td>
                 <td class="player-name text-center">${player.name}</td>
                 <td class="tier-col text-center">${getTierBadgeHtml(player.tier)}</td>
+                <td class="mmr-cell text-center"><span class="mmr-pill"><i class="fas fa-bolt me-1"></i>${getPlayerMmr(player.name)}</span></td>
                 <td class="games-cell text-center">${player.total_games}</td>
                 <td class="winrate-cell text-center" style="color: ${winrateColor}">
                     ${(player.overall_winrate * 100).toFixed(1)}%
@@ -443,6 +464,7 @@ export function renderPlayersList(gameData, selectedPlayers, handlePlayerClick) 
         const chartId = `playerChart${index}`;
         const recentForm = getRecentFormHtml(player.name);
         const playerTags = getPlayerTagsHtml(player.name, 2);
+        const playerMmr = getPlayerMmr(player.name);
 
         // 통합 카드 - 컴팩트/상세 모드 모두 포함
         return `
@@ -465,7 +487,12 @@ export function renderPlayersList(gameData, selectedPlayers, handlePlayerClick) 
                             <div class="d-flex align-items-center gap-2">
                                 ${recentForm}
                             </div>
-                            <small class="text-muted">${player.total_games}게임</small>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="player-mmr-badge" title="티어 기본값과 경기 결과로 계산한 추정 MMR">
+                                    <i class="fas fa-bolt me-1"></i>MMR ${playerMmr}
+                                </span>
+                                <small class="text-muted">${player.total_games}게임</small>
+                            </div>
                         </div>
 
                         <!-- 태그 -->
@@ -523,6 +550,7 @@ export function renderPlayersList(gameData, selectedPlayers, handlePlayerClick) 
     if (tagGlossaryContainer) {
         tagGlossaryContainer.innerHTML = renderTagGlossary();
     }
+
 }
 
 // 플레이어의 주요 포지션 반환 (상위 3개)
@@ -1038,8 +1066,12 @@ export function renderMatchHistory(gameRecords = []) {
     const matchHistoryList = document.getElementById('matchHistoryList');
     if (!matchHistoryList) return;
 
+    const sourceRecords = window.gameData?.players
+        ? calculateMatchMmrChanges(window.gameData, gameRecords)
+        : gameRecords;
+
     // 서버 데이터에서 최근 15경기만 표시 (역순으로 최신순)
-    const recentMatches = gameRecords.slice(-15).reverse();
+    const recentMatches = sourceRecords.slice(-15).reverse();
 
     if (recentMatches.length === 0) {
         matchHistoryList.innerHTML = `
@@ -1064,9 +1096,10 @@ export function renderMatchHistory(gameRecords = []) {
             // 팀 이름 포맷팅 (첫글자 대문자)
             const formatName = (name) => name.charAt(0).toUpperCase() + name.slice(1);
 
-            // 구분자를 가운뎃점으로 변경
-            const winnersStr = match.winners.map(formatName).join(' · ');
-            const losersStr = match.losers.map(formatName).join(' · ');
+            // 기록 본문은 예전처럼 승패와 팀원만 간단히 표시하고, MMR 상세는 클릭 시 펼쳐서 확인한다.
+            const winnersStr = match.winners.map(playerName => escapeHtml(formatName(playerName))).join(' · ');
+            const losersStr = match.losers.map(playerName => escapeHtml(formatName(playerName))).join(' · ');
+            const detailId = `match-mmr-detail-${groupIndex}-${matchIndex}`;
 
             // 날짜 포맷팅 (월/일만)
             let dateStr = '-';
@@ -1088,7 +1121,7 @@ export function renderMatchHistory(gameRecords = []) {
             }
 
             return `
-                <div class="match-row" data-match-index="${matchIndex}">
+                <div class="match-row match-row-toggle" data-match-index="${matchIndex}" data-detail-id="${detailId}" role="button" tabindex="0" aria-expanded="false" aria-controls="${detailId}">
                     <div class="match-round">
                         <span class="match-date">${dateStr}</span>
                     </div>
@@ -1101,6 +1134,10 @@ export function renderMatchHistory(gameRecords = []) {
                         <span class="team-players">${highlightPlayer(losersStr, aceName, 'ace')}</span>
                         <span class="team-badge lose">L</span>
                     </div>
+                    <span class="match-detail-chevron" aria-hidden="true"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div id="${detailId}" class="match-mmr-detail-panel" hidden>
+                    ${renderMatchMmrDetails(match)}
                 </div>
             `;
         }).join('');
@@ -1112,6 +1149,8 @@ export function renderMatchHistory(gameRecords = []) {
             </div>
         `;
     }).join('');
+
+    setupMatchHistoryToggle(matchHistoryList);
 }
 
 // 멤버 구성으로 매치 그룹핑
@@ -1153,16 +1192,126 @@ function createMemberSignature(team1, team2) {
     return allMembers.join('|');
 }
 
+function renderMatchMmrDetails(match) {
+    if (!match.mmrChanges || Object.keys(match.mmrChanges).length === 0) {
+        return `
+            <div class="match-mmr-empty">
+                <i class="fas fa-info-circle me-1"></i>이 경기의 MMR 변화 데이터를 계산할 수 없습니다.
+            </div>
+        `;
+    }
+
+    return `
+        <div class="match-mmr-detail-grid">
+            ${renderTeamMmrDetails('승리팀', 'win', match.winners || [], match.mmrChanges)}
+            ${renderTeamMmrDetails('패배팀', 'lose', match.losers || [], match.mmrChanges)}
+        </div>
+    `;
+}
+
+function renderTeamMmrDetails(teamLabel, resultType, players, mmrChanges) {
+    const playerRows = players.map(playerName => {
+        const change = mmrChanges[playerName];
+        const displayName = escapeHtml(playerName.charAt(0).toUpperCase() + playerName.slice(1));
+
+        if (!change || typeof change.delta !== 'number') {
+            return `
+                <div class="match-mmr-detail-player">
+                    <span class="match-mmr-detail-name">${displayName}</span>
+                    <span class="text-muted small">변화량 없음</span>
+                </div>
+            `;
+        }
+
+        const roundedDelta = change.delta < 0
+            ? -Math.round(Math.abs(change.delta))
+            : Math.round(change.delta);
+        const sign = roundedDelta > 0 ? '+' : '';
+        const deltaClass = roundedDelta >= 0 ? 'mmr-delta-positive' : 'mmr-delta-negative';
+        return `
+            <div class="match-mmr-detail-player">
+                <div class="match-mmr-detail-summary">
+                    <span class="match-mmr-detail-name">${displayName}</span>
+                    <span class="match-mmr-delta ${deltaClass}">${sign}${roundedDelta}</span>
+                </div>
+                <div class="match-mmr-detail-reasons">
+                    ${renderMmrReasonLine('팀 MMR 차이', typeof change.teamDiff === 'number' ? `상대팀 평균 ${formatSignedInteger(change.teamDiff)}점` : null)}
+                    ${renderMmrReasonLine('팀 내 내 MMR', typeof change.playerTeamDiff === 'number' ? `팀 평균 대비 ${formatSignedInteger(change.playerTeamDiff)}점` : null)}
+                    ${renderMmrReasonLine('라인 상대', getLaneReasonText(change))}
+                    ${change.formulaText ? `<div class="match-mmr-formula">${escapeHtml(change.formulaText)}</div>` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    return `
+        <div class="match-mmr-detail-team ${resultType}-detail">
+            <div class="match-mmr-detail-title">
+                <span class="team-badge ${resultType === 'win' ? 'win' : 'lose'}">${resultType === 'win' ? 'W' : 'L'}</span>
+                <strong>${teamLabel}</strong>
+            </div>
+            ${playerRows}
+        </div>
+    `;
+}
+
+function renderMmrReasonLine(label, text) {
+    if (!text) return '';
+
+    return `
+        <div class="match-mmr-reason-line">
+            <span>${label}</span>
+            <strong>${escapeHtml(text)}</strong>
+        </div>
+    `;
+}
+
+function getLaneReasonText(change) {
+    if (change.hasLaneInfo === false) {
+        return '라인 정보 없음: 라인 보정 1.00x';
+    }
+
+    if (typeof change.laneDiff === 'number' && change.position && change.laneOpponent) {
+        return `${change.position} ${change.laneOpponent}, 상대 대비 ${formatSignedInteger(change.laneDiff)}점`;
+    }
+
+    return null;
+}
+
+function setupMatchHistoryToggle(matchHistoryList) {
+    matchHistoryList.querySelectorAll?.('.match-row-toggle').forEach(row => {
+        const toggle = () => {
+            const detailId = row.getAttribute('data-detail-id');
+            const detailPanel = detailId ? document.getElementById(detailId) : null;
+            if (!detailPanel) return;
+
+            const nextExpanded = row.getAttribute('aria-expanded') !== 'true';
+            row.setAttribute('aria-expanded', String(nextExpanded));
+            row.classList.toggle('is-expanded', nextExpanded);
+            detailPanel.hidden = !nextExpanded;
+        };
+
+        row.addEventListener('click', toggle);
+        row.addEventListener('keydown', event => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                toggle();
+            }
+        });
+    });
+}
+
 // 플레이어 이름에서 MVP/ACE 하이라이트
 function highlightPlayer(playersStr, highlightName, type) {
     if (!highlightName || highlightName === '-') return playersStr;
 
     const color = type === 'mvp' ? '#9333EA' : '#10B981';
     const icon = type === 'mvp' ? 'fa-crown' : 'fa-medal';
+    const safeHighlightName = escapeRegExp(escapeHtml(highlightName.charAt(0).toUpperCase() + highlightName.slice(1)));
 
     return playersStr.replace(
-        new RegExp(`(${highlightName})`, 'gi'),
-        `<span style="color: ${color};" class="fw-bold"><i class="fas ${icon} me-1"></i>$1</span>`
+        new RegExp(`(${safeHighlightName})`, 'gi'),
+        (match) => `<span style="color: ${color};" class="fw-bold"><i class="fas ${icon} me-1"></i>${match}</span>`
     );
 }
 
@@ -1245,4 +1394,65 @@ export function showCaptureButton(show) {
     if (captureBtn) {
         captureBtn.style.display = show ? 'block' : 'none';
     }
+}
+
+function formatPlayerWithMmrDelta(displayName, mmrChange) {
+    if (!mmrChange || typeof mmrChange.delta !== 'number') {
+        return displayName;
+    }
+
+    const roundedDelta = mmrChange.delta < 0
+        ? -Math.round(Math.abs(mmrChange.delta))
+        : Math.round(mmrChange.delta);
+    const sign = roundedDelta > 0 ? '+' : '';
+    const deltaClass = roundedDelta >= 0 ? 'mmr-delta-positive' : 'mmr-delta-negative';
+    const titleText = buildMmrChangeTitle(roundedDelta, sign, mmrChange);
+
+    return `${displayName} <span class="match-mmr-delta ${deltaClass}" title="${escapeHtml(titleText)}">${sign}${roundedDelta}</span>`;
+}
+
+function buildMmrChangeTitle(roundedDelta, sign, mmrChange) {
+    const titleParts = [`MMR 변화량: ${sign}${roundedDelta}`];
+
+    if (typeof mmrChange.multiplier === 'number') {
+        titleParts.push(`개인 배율: ${mmrChange.multiplier.toFixed(2)}x`);
+    }
+
+    if (typeof mmrChange.teamDiff === 'number') {
+        titleParts.push(`팀 MMR 차이: 상대팀 평균 ${formatSignedInteger(mmrChange.teamDiff)}점`);
+    }
+
+    if (typeof mmrChange.playerTeamDiff === 'number') {
+        titleParts.push(`팀 내 내 MMR: 팀 평균 대비 ${formatSignedInteger(mmrChange.playerTeamDiff)}점`);
+    }
+
+    if (mmrChange.hasLaneInfo !== false && typeof mmrChange.laneDiff === 'number' && mmrChange.position && mmrChange.laneOpponent) {
+        titleParts.push(`라인 상대: ${mmrChange.position} ${mmrChange.laneOpponent}, 상대 대비 ${formatSignedInteger(mmrChange.laneDiff)}점`);
+    } else if (mmrChange.hasLaneInfo === false) {
+        titleParts.push('라인 정보 없음: 라인 보정 1.00x');
+    }
+
+    if (mmrChange.formulaText) {
+        titleParts.push(mmrChange.formulaText);
+    }
+
+    return titleParts.join(' / ');
+}
+
+function formatSignedInteger(value) {
+    const rounded = Math.round(value);
+    return rounded > 0 ? `+${rounded}` : String(rounded);
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function escapeRegExp(value) {
+    return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
